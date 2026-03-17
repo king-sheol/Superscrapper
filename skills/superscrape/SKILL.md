@@ -12,10 +12,36 @@ description: >
 
 Collect, normalize, and analyze data from multiple web sources. Produce structured analytical reports with XLSX and interactive dashboards.
 
-## Prerequisites
+## Phase 0: Firecrawl Onboarding (auto, before any work)
 
-- **Firecrawl CLI** must be installed and authenticated (`firecrawl --status` to check)
-- **Python 3.8+** must be installed (for XLSX generation and dashboards)
+Before starting the workflow, **always** run this check:
+
+```bash
+firecrawl --status
+```
+
+Handle each case:
+
+**Case 1: "command not found"** — Firecrawl CLI not installed:
+```bash
+npm install -g firecrawl-cli
+```
+If npm not found, tell the user to install Node.js first.
+
+**Case 2: "Not authenticated"** — CLI installed but no API key:
+1. Run `firecrawl login --browser` — this opens the browser for signup/login
+2. Tell the user: "Откроется браузер для регистрации в Firecrawl. Создай аккаунт (или войди), скопируй API ключ."
+3. If browser login fails, tell the user to:
+   - Go to https://www.firecrawl.dev and sign up
+   - Copy the API key from dashboard
+   - Then run: `firecrawl login -k <API_KEY>`
+4. After login, verify with `firecrawl --status` — must show "Authenticated"
+
+**Case 3: "Authenticated"** — ready to go. Note the credits and concurrency limits from the output.
+
+**Python check**: Also verify `python --version` (need 3.8+). If missing, tell the user.
+
+Only proceed to Phase 1 after both Firecrawl and Python are confirmed ready.
 
 ## Firecrawl CLI Reference
 
@@ -36,8 +62,6 @@ firecrawl scrape URL2 -o .firecrawl/2.md &
 wait
 ```
 
-**Auth check**: Run `firecrawl --status` at the start. If not authenticated, run `firecrawl login --browser`.
-
 ## Workflow
 
 Follow these 6 phases strictly.
@@ -45,7 +69,8 @@ Follow these 6 phases strictly.
 **At the very start**, initialize TodoWrite with all phases:
 ```
 TodoWrite:
-1. [in_progress] Phase 1: Accept task & clarify columns
+0. [in_progress] Phase 0: Firecrawl & Python onboarding check
+1. [pending] Phase 1: Accept task & clarify columns
 2. [pending] Phase 2: Discover sources
 3. [pending] Phase 3: Collect data
 4. [pending] Phase 4: Normalize & validate
