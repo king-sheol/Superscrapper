@@ -56,7 +56,7 @@ Just write naturally:
 
 ## Prerequisites
 
-- **Firecrawl MCP** plugin installed and configured
+- **Firecrawl CLI** installed and authenticated (`npm install -g firecrawl-cli && firecrawl login --browser`)
 - **Python 3.8+** with pip (for XLSX generation and Streamlit)
 
 ## Plugin structure

@@ -14,24 +14,29 @@ Collect, normalize, and analyze data from multiple web sources. Produce structur
 
 ## Prerequisites
 
-- **Firecrawl MCP** must be available (for web search and scraping)
+- **Firecrawl CLI** must be installed and authenticated (`firecrawl --status` to check)
 - **Python 3.8+** must be installed (for XLSX generation and dashboards)
 
-## Firecrawl MCP Tool Reference
+## Firecrawl CLI Reference
 
-These are the exact MCP tool names to use. The prefix depends on the plugin configuration,
-typically `mcp__firecrawl__` or similar. Check available tools at runtime.
+Firecrawl is a CLI tool invoked via Bash. Always save output to `.firecrawl/` directory with `-o` flag.
 
-| Action | Tool Name Pattern | Usage |
-|--------|------------------|-------|
-| Web search | `firecrawl_search` or `search` | Find sources by topic. Args: `query`, `limit` |
-| Scrape page | `firecrawl_scrape` or `scrape` | Extract content from URL. Args: `url`, `formats` |
-| Crawl site | `firecrawl_crawl` or `crawl` | Crawl multiple pages. Args: `url`, `limit` |
-| Extract data | `firecrawl_extract` or `extract` | Extract structured data. Args: `urls`, `prompt` |
-| Fetch page | `firecrawl_fetch` or `fetch` | Simple page fetch (for APIs). Args: `url` |
+| Action | CLI Command | Usage |
+|--------|------------|-------|
+| Web search | `firecrawl search "query" -o .firecrawl/file.json --json` | Find sources by topic. `--limit N`, `--scrape` to include content |
+| Scrape page | `firecrawl scrape URL -o .firecrawl/file.md` | Extract content from URL. `--wait-for 3000` for JS, `--only-main-content` |
+| Map site URLs | `firecrawl map URL --search "keyword" -o .firecrawl/urls.txt` | Discover URLs on a site, filter by keyword |
+| Crawl site | `firecrawl crawl URL --wait --limit N -o .firecrawl/file.json` | Crawl multiple pages. `--max-depth`, `--include-paths` |
+| AI agent | `firecrawl agent "task" --wait -o .firecrawl/file.json` | Autonomous extraction. `--urls`, `--schema` for structured output |
 
-**Finding exact tool names**: At the start of the workflow, check which Firecrawl tools are available.
-If unsure, use the Skill tool to invoke `firecrawl:firecrawl-cli` for the correct syntax.
+**Parallelization**: Run independent scrapes with `&` and `wait`:
+```bash
+firecrawl scrape URL1 -o .firecrawl/1.md &
+firecrawl scrape URL2 -o .firecrawl/2.md &
+wait
+```
+
+**Auth check**: Run `firecrawl --status` at the start. If not authenticated, run `firecrawl login --browser`.
 
 ## Workflow
 
@@ -112,7 +117,7 @@ Wait for user confirmation before proceeding.
 
 For each approved source, dispatch a **scraper** subagent (see agents/scraper.md):
 - Each agent works with ONE source
-- Uses Firecrawl MCP tools (search, scrape, extract)
+- Uses Firecrawl CLI (search, scrape, map, agent)
 - If a public API was found — use it preferentially via fetch
 - Returns structured data matching the agreed column list
 

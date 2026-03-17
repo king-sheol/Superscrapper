@@ -1,7 +1,7 @@
 ---
 name: scraper
 description: |
-  Use this agent to collect data from a single web source using Firecrawl MCP tools.
+  Use this agent to collect data from a single web source using Firecrawl CLI.
   Dispatch one scraper agent per source — they run in parallel.
 
   <example>
@@ -37,17 +37,25 @@ You will receive:
 
 ## Process
 
-1. **If API available**: Use Firecrawl fetch to call the API endpoint. Parse JSON/XML response.
-2. **If no API**: Use Firecrawl scrape on the source URL. Extract data matching column list.
-3. **If source has multiple pages**: Use Firecrawl to navigate pagination (look for next page links).
+1. **If API available**: Use `firecrawl scrape` on the API endpoint URL, or use Bash `curl` for REST APIs. Parse JSON/XML response.
+2. **If no API**: Use `firecrawl scrape URL -o .firecrawl/source.md` on the source URL. Extract data matching column list.
+3. **If source has multiple pages**: Use `firecrawl map URL --search "keyword"` to discover pages, then scrape each. For pagination, use `firecrawl browser` if needed.
 4. **Rate limiting**: Wait 1-2 seconds between requests to avoid blocks.
+
+**Firecrawl CLI commands** (run via Bash):
+```bash
+firecrawl search "query" -o .firecrawl/search.json --json   # Find sources
+firecrawl scrape URL -o .firecrawl/page.md                  # Scrape a page
+firecrawl scrape URL --wait-for 3000 -o .firecrawl/page.md  # JS-rendered page
+firecrawl map URL --search "keyword" -o .firecrawl/urls.txt  # Find subpages
+```
 
 ## Error Handling (Root Cause)
 
 If a request fails:
 - **HTTP 403/429**: Rate limited → wait 5 seconds, retry once. If still blocked, report and stop.
 - **HTTP 5xx**: Server error → retry once after 3 seconds.
-- **Empty response**: Check if JS rendering needed → retry with Firecrawl JS mode.
+- **Empty response**: Check if JS rendering needed → retry with `--wait-for 3000`.
 - **Timeout**: Increase timeout and retry once.
 - **Any other error**: Log the error details and stop. Do NOT retry infinitely.
 
