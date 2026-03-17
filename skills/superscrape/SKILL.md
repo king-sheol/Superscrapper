@@ -278,6 +278,7 @@ When a source is unavailable, do NOT just try another source. Systematically dia
 
 ## Key Rules
 
+- **Language**: Always respond in the same language the user used in their request. If the user writes in Russian — all output, plans, reports, questions, and checkpoints must be in Russian. If in English — in English.
 - Numbers always include context (good/bad, above/below market average)
 - Missing data → explicit N/A with explanation why
 - Highlight anomalies and insights, don't just list facts
