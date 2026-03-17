@@ -60,7 +60,7 @@ Write the complete report to `report.md` using the Write tool. The report must c
 ## Quality Checklist
 
 Before finishing, verify:
-- [ ] All 6 sections present (Overview, Data, Analysis, Conclusions, Confidence Map)
+- [ ] All 6 sections present (Title/Metadata, Overview, Data, Analysis, Conclusions & Recommendations, Confidence Map)
 - [ ] Every number has context
 - [ ] Every N/A has explanation
 - [ ] Insights are specific with data backing

@@ -24,7 +24,7 @@ Superscrapper/
 │   │   ├── SKILL.md
 │   │   └── references/
 │   │       ├── report-format.md     — Analytical report template
-│   │       ├── xlsx-generator.md    — XLSX generation (openpyxl)
+│   │       ├── xlsx-generator.md    — CSV + XLSX generation (openpyxl)
 │   │       └── dashboard-template.md — Streamlit + HTML templates
 │   ├── superscrape-dashboard/       — Regenerate dashboard from existing data
 │   │   └── SKILL.md
@@ -67,7 +67,12 @@ Superscrapper/
 - Each agent works one source via Firecrawl MCP
 - API-first strategy when public APIs found
 - Rate limiting between requests
-- Root cause error handling (diagnose → fix by cause → report)
+- Root cause error handling:
+  - HTTP 403/429 → 5s wait + single retry
+  - HTTP 5xx → 3s wait + single retry
+  - Empty response → retry with JS rendering mode
+  - Timeout → increase timeout + single retry
+  - Other errors → log and stop (no infinite retries)
 - **Checkpoint**: show data preview, confirm columns look correct
 
 ### Phase 4: Normalize & Validate
@@ -125,8 +130,10 @@ Each run generates a dated directory: `output/YYYY-MM-DD-{topic-slug}/`
 | scraper | Collect data from one source | Firecrawl, Read, Write | Structured data + issues |
 | report-writer | Write analytical report | Write, Read | report.md |
 | dashboard-generator | Generate XLSX + dashboards | Write, Bash, Read | CSV, XLSX, dashboard files |
-| data-quality-reviewer | Validate data quality | Read | Approved / Issues Found |
-| report-reviewer | Review report quality | Read | Approved / Issues Found |
+| data-quality-reviewer | Validate data quality | Read (read-only) | Approved / Issues Found |
+| report-reviewer | Review report quality | Read (read-only) | Approved / Issues Found |
+
+All agents inherit the parent model. Reviewer agents are intentionally restricted to read-only tools to prevent them from modifying the files they review.
 
 ## Report Format
 
@@ -176,6 +183,18 @@ Rules: numbers need context, N/A explained, insights specific, recommendations a
 - **Firecrawl MCP** plugin installed and configured
 - **Python 3.8+** with pip (for XLSX generation and Streamlit)
 
+### Firecrawl MCP Tool Reference
+
+Tool names depend on plugin configuration (typically prefixed `mcp__firecrawl__`). Exact names are discovered at runtime.
+
+| Action | Tool Pattern | Usage |
+|--------|-------------|-------|
+| Web search | `firecrawl_search` / `search` | Find sources by topic. Args: `query`, `limit` |
+| Scrape page | `firecrawl_scrape` / `scrape` | Extract content from URL. Args: `url`, `formats` |
+| Crawl site | `firecrawl_crawl` / `crawl` | Crawl multiple pages. Args: `url`, `limit` |
+| Extract data | `firecrawl_extract` / `extract` | Extract structured data. Args: `urls`, `prompt` |
+| Fetch page | `firecrawl_fetch` / `fetch` | Simple page fetch (for APIs). Args: `url` |
+
 ## Activation
 
 - **Slash command**: `/superscrape <topic>`
@@ -185,4 +204,4 @@ Rules: numbers need context, N/A explained, insights specific, recommendations a
 ## Additional Skills
 
 - `/superscrape-dashboard` — Regenerate dashboard from existing CSV/XLSX data
-- `/superscrape-update` — Re-scrape same sources and highlight changes vs previous run
+- `/superscrape-update` — Re-scrape same sources, highlight changes vs previous run, and add a "Changes Since Last Run" section to the report
