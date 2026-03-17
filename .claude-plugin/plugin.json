@@ -1,7 +1,8 @@
 {
   "name": "superscraper",
+  "version": "1.0.0",
   "description": "Universal data collection, analysis and dashboard generation plugin. Scrapes web sources, normalizes data, produces analytical reports with XLSX and Streamlit dashboards.",
   "author": {
-    "name": "User"
+    "name": "king-sheol"
   }
 }
