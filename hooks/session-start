@@ -1,0 +1,12 @@
+#!/bin/bash
+# Superscraper SessionStart hook
+# Injects plugin awareness into Claude's context for auto-activation
+
+cat <<'EOF'
+{
+  "hookSpecificOutput": {
+    "hookEventName": "SessionStart",
+    "additionalContext": "The Superscraper plugin is available. It can collect, analyze, and visualize data from the web on any topic. Use /superscrape to start, or it will auto-activate when the user asks to collect data, scrape information, research topics, compare options, find market data, or build comparison tables. Keywords: 'собери данные', 'найди информацию', 'сравни', 'исследуй рынок', 'парсинг', 'scrape', 'research', 'compare'."
+  }
+}
+EOF
