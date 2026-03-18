@@ -97,7 +97,28 @@ All generated files go into a dated subdirectory:
 ```
 Where `{topic-slug}` is the topic in lowercase with spaces replaced by hyphens (e.g., `crm-systems`).
 
-Create this directory at the start of Phase 5 before any file generation.
+**Create this directory at the START of Phase 2** (not Phase 5!) so intermediate data is persisted.
+
+## Intermediate Data Persistence
+
+**CRITICAL**: Agent temp files disappear between sessions. To survive rate limits, session crashes, or "продолжай" after a break, save intermediate state to the output directory after EACH phase:
+
+| After Phase | Save to file | Contents |
+|-------------|-------------|----------|
+| Phase 1 | `output/{dir}/_state/config.json` | topic, data_type, columns list, scope |
+| Phase 2 | `output/{dir}/_state/sources.json` | discovered sources with URLs, types, quality |
+| Phase 3 | `output/{dir}/_state/raw_data.json` | raw scraped data from all agents (merge after each agent returns) |
+| Phase 4 | `output/{dir}/_state/normalized.json` | cleaned, deduplicated, validated dataset |
+
+Format: JSON. Always overwrite with latest state.
+
+**On resume**: At the start of each phase, check if `_state/{file}` exists. If it does — read it and skip the phase that produced it. This means:
+- If `config.json` exists → skip Phase 1
+- If `sources.json` exists → skip Phase 2, ask user to confirm sources
+- If `raw_data.json` exists → skip Phase 3, go to Phase 4
+- If `normalized.json` exists → skip Phase 4, go to Phase 5
+
+Always tell the user: "Нашёл данные от предыдущего запуска. Продолжаю с фазы N."
 
 ### Phase 1: Accept Task & Clarify
 
@@ -123,6 +144,12 @@ Create this directory at the start of Phase 5 before any file generation.
 
 4. Confirm the final column list with the user before proceeding.
 
+5. **Save state**: Create output directory and save config:
+```bash
+mkdir -p output/YYYY-MM-DD-{topic-slug}/_state
+```
+Write `_state/config.json` with: `{"topic": "...", "data_type": "...", "columns": [...], "scope": "..."}`
+
 ### Phase 2: Source Discovery (2-3 agents in parallel)
 
 Dispatch 2-3 agents in parallel using the Agent tool:
@@ -147,6 +174,8 @@ Each agent returns a list of potential sources with:
 ```
 
 Wait for user confirmation before proceeding.
+
+**Save state**: Write `_state/sources.json` with the approved source list (URLs, types, quality).
 
 ### Phase 3: Data Collection (up to 5 scraper agents in parallel)
 
@@ -174,6 +203,8 @@ For each approved source, dispatch a **scraper** subagent (see agents/scraper.md
 "Колонки верные? Данные выглядят правильно?"
 ```
 
+**Save state**: Write `_state/raw_data.json` with ALL collected data from ALL agents. This is critical — agent temp files will be lost between sessions.
+
 ### Phase 4: Normalize & Validate (sequential, orchestrator)
 
 This phase runs in the main context (not subagents) because it needs the full picture.
@@ -199,6 +230,8 @@ This phase runs in the main context (not subagents) because it needs the full pi
    - Compare with market benchmarks where possible
 
 6. **Assign confidence levels** to each source: High / Medium / Low with justification
+
+**Save state**: Write `_state/normalized.json` with the full normalized dataset, analysis results, and confidence map.
 
 ### Phase 5: Generate Output
 
