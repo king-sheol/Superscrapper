@@ -3,10 +3,10 @@
 ## Pre-check
 
 ```bash
-cat {output_dir}/_state/config.json
+cat {output_dir}/_state/config.json > /dev/null 2>&1 && echo "GATE OK" || echo "GATE FAIL: config.json missing"
 ```
 
-Must contain topic, columns, scope. If missing, go back to Phase 1.
+If GATE FAIL — go back to Phase 1.
 
 ## Instructions
 

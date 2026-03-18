@@ -3,10 +3,10 @@
 ## Pre-check
 
 ```bash
-ls {output_dir}/_state/raw_data_*.json
+ls {output_dir}/_state/raw_data_*.json > /dev/null 2>&1 && echo "GATE OK" || echo "GATE FAIL: no raw_data files"
 ```
 
-Must find at least one raw data file. If none exist, go back to Phase 3.
+If GATE FAIL — go back to Phase 3.
 
 ## Instructions
 

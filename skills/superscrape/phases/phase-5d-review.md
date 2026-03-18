@@ -2,13 +2,12 @@
 
 ## Pre-check
 
-Dashboard files must exist (or dashboard_choice = "none"):
-
 ```bash
-cat {output_dir}/_state/dashboard_choice.json
+choice=$(python -c "import json; print(json.load(open('{output_dir}/_state/dashboard_choice.json'))['choice'])" 2>/dev/null)
+if [ "$choice" = "none" ] || [ -f {output_dir}/dashboard.py ] || [ -f {output_dir}/dashboard.html ]; then echo "GATE OK"; else echo "GATE FAIL: dashboard files missing for choice=$choice"; fi
 ```
 
-If choice is not "none", verify the dashboard file(s) exist. If missing, go back to Phase 5c.
+If GATE FAIL — go back to Phase 5c.
 
 ## Instructions
 

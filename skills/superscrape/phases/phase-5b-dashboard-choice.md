@@ -3,10 +3,10 @@
 ## Pre-check
 
 ```bash
-test -f {output_dir}/report.md && test -f {output_dir}/data.xlsx && echo "OK"
+test -f {output_dir}/report.md && test -f {output_dir}/data.csv && test -f {output_dir}/data.xlsx && echo "GATE OK" || echo "GATE FAIL: report/data files missing"
 ```
 
-report.md and data.xlsx must exist. If not, go back to Phase 5a.
+If GATE FAIL — go back to Phase 5a.
 
 ## Instructions
 

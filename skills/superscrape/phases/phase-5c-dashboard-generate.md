@@ -3,10 +3,10 @@
 ## Pre-check
 
 ```bash
-cat {output_dir}/_state/dashboard_choice.json
+cat {output_dir}/_state/dashboard_choice.json > /dev/null 2>&1 && echo "GATE OK" || echo "GATE FAIL: dashboard_choice.json missing"
 ```
 
-Must contain the user's choice. If missing, go back to Phase 5b.
+If GATE FAIL — go back to Phase 5b.
 
 ## Instructions
 

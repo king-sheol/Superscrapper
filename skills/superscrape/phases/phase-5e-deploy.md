@@ -2,11 +2,7 @@
 
 ## Pre-check
 
-```bash
-cat {output_dir}/_state/dashboard_choice.json
-```
-
-Phase 5d must be in completed_phases. If not, go back to Phase 5d.
+No file gate — the orchestrator verifies that Phase 5d (report-reviewer VERDICT: Approved) is in completed_phases before dispatching this phase. If not, go back to Phase 5d.
 
 ## Instructions
 

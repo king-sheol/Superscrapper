@@ -3,10 +3,10 @@
 ## Pre-check
 
 ```bash
-firecrawl --status | grep Authenticated
+firecrawl --status 2>&1 | grep -q "Authenticated" && echo "GATE OK" || echo "GATE FAIL: Firecrawl not authenticated"
 ```
 
-Must show "Authenticated". If not, go back to Phase 0.
+If GATE FAIL — go back to Phase 0.
 
 ## Instructions
 

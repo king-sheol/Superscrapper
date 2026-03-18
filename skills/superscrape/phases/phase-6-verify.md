@@ -2,13 +2,7 @@
 
 ## Pre-check
 
-Phase 5e must be in completed_phases:
-
-```bash
-cat {output_dir}/.superscrape-session.json
-```
-
-If "5e" is not in completed_phases, go back to Phase 5e.
+No file gate — the orchestrator verifies that Phase 5e (deploy) is in completed_phases before dispatching this phase. If not, go back to Phase 5e.
 
 ## Instructions
 

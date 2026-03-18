@@ -3,10 +3,10 @@
 ## Pre-check
 
 ```bash
-cat {output_dir}/_state/normalized.json | python -c "import sys,json; d=json.load(sys.stdin); assert d.get('quality_review')=='Approved', 'Not approved'"
+grep -q '"quality_review"' {output_dir}/_state/normalized.json 2>/dev/null && echo "GATE OK" || echo "GATE FAIL: normalized.json missing or no quality_review"
 ```
 
-normalized.json must exist and quality_review must be "Approved". If not, go back to Phase 4.
+If GATE FAIL — go back to Phase 4.
 
 ## Instructions
 

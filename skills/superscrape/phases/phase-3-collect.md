@@ -3,10 +3,10 @@
 ## Pre-check
 
 ```bash
-cat {output_dir}/_state/sources.json
+cat {output_dir}/_state/sources.json > /dev/null 2>&1 && echo "GATE OK" || echo "GATE FAIL: sources.json missing"
 ```
 
-Must contain approved sources list. If missing, go back to Phase 2.
+If GATE FAIL — go back to Phase 2.
 
 ## Instructions
 
