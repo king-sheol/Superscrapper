@@ -21,68 +21,37 @@ You are a dashboard and data file generator. Your job is to create production-re
 ## Input
 
 You will receive:
-- **Normalized dataset** (headers + rows)
-- **Topic** of the research
-- **Source metadata** (URLs, confidence levels)
-- **Dashboard type** to generate: "streamlit", "html", "both", or "data-only"
-- **Deploy target** (if applicable): VPS details or GitHub repo name
+- **mode**: "data-only" (Phase 5a: CSV+XLSX only) or "dashboard-only" (Phase 5c: dashboards only)
+- **output_dir**: path to write files
+- **Normalized dataset** (inline data or file path to read)
+
+For "data-only" mode:
+- Read xlsx-generator.md via `Read ${CLAUDE_PLUGIN_ROOT}/skills/superscrape/references/xlsx-generator.md`
+
+For "dashboard-only" mode additionally:
+- **dashboard_choice**: "streamlit", "html", or "both"
+- **topic**, **column list with types**, **analysis summary** (leaders, patterns, KPI values)
+- Read dashboard-template.md via `Read ${CLAUDE_PLUGIN_ROOT}/skills/superscrape/references/dashboard-template.md`
+- Read data from `{output_dir}/data.csv`
 
 ## Process
 
-### Step 1: Always Generate CSV + XLSX
+### If mode = "data-only":
 
-Read the XLSX template from `references/xlsx-generator.md`.
+1. Read xlsx-generator.md template
+2. Generate Python script that creates data.csv + data.xlsx
+3. Run script via Bash
+4. Verify both files
 
-Generate a Python script that:
-1. Creates `data.csv` (UTF-8, comma-separated)
-2. Creates `data.xlsx` with formatting (auto-width, filters, color scale, metadata sheet)
-3. Run the script via Bash
+### If mode = "dashboard-only":
 
-### Step 2: Generate Dashboard(s) Based on Type
-
-Read the dashboard template from `references/dashboard-template.md`.
-
-**Determine visualization types** using the decision table:
-- Analyze column types (numeric, categorical, temporal, geographic)
-- Select primary + comparison chart types accordingly
-- Select KPI card metrics
-
-**If Streamlit:**
-Generate `dashboard.py` with:
-- Page config (wide layout, dark theme)
-- KPI metric cards (top row)
-- Sidebar filters (categorical columns → multiselect)
-- Primary chart (Plotly, based on decision table)
-- Comparison chart (Plotly, based on decision table)
-- Full data table (st.dataframe with sorting)
-- Metadata expander (sources + confidence)
-- Custom CSS for dark theme styling
-
-Also generate deployment files:
-- `requirements.txt` (streamlit, plotly, pandas, openpyxl)
-- `Dockerfile` (python:3.11-slim based)
-- `docker-compose.yml` (port 8501, volume mount)
-- `nginx.conf` (reverse proxy template)
-
-**If HTML:**
-Generate `dashboard.html` — a single self-contained file with:
-- Embedded data as JSON
-- Plotly.js loaded from CDN
-- KPI cards (CSS grid)
-- Interactive charts (same types as Streamlit version)
-- Searchable/sortable table (vanilla JS)
-- Dark theme (Catppuccin Mocha palette)
-- Responsive design (mobile-friendly)
-- Source confidence map
-
-### Step 3: Verify Generated Files
-
-Run verification:
-```bash
-python -c "import csv; r=list(csv.reader(open('data.csv'))); print(f'CSV: {len(r)-1} rows, {len(r[0])} columns')"
-python -c "import openpyxl; wb=openpyxl.load_workbook('data.xlsx'); print(f'XLSX: sheets={wb.sheetnames}, rows={wb.active.max_row}')"
-python -c "import ast; ast.parse(open('dashboard.py').read()); print('dashboard.py: syntax OK')"
-```
+1. Read dashboard-template.md template
+2. Read data from {output_dir}/data.csv
+3. Determine visualization types using decision table from template
+4. Generate chosen dashboard(s):
+   - Streamlit → dashboard.py + requirements.txt + Dockerfile + docker-compose.yml + nginx.conf
+   - HTML → dashboard.html (self-contained, data embedded as JSON)
+5. Verify generated files
 
 ## Output
 
