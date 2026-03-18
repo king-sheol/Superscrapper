@@ -32,8 +32,8 @@ skills/superscrape/
 │   ├── phase-5a-report-and-data.md       (~40 lines)
 │   ├── phase-5b-dashboard-choice.md      (~15 lines)
 │   ├── phase-5c-dashboard-generate.md    (~30 lines)
-│   ├── phase-5d-deploy.md                (~40 lines)
-│   ├── phase-5e-review.md                (~30 lines)
+│   ├── phase-5d-review.md                (~30 lines)
+│   ├── phase-5e-deploy.md                (~40 lines)
 │   └── phase-6-verify.md                 (~30 lines)
 └── references/
     ├── report-format.md                  (unchanged)
@@ -65,19 +65,19 @@ skills/superscrape/
 
 ## Update session
 [update .superscrape-session.json → current_phase = next]
-
-## Next
-Read `phases/phase-{X+1}.md` and continue.
 ```
 
+Phase files do NOT reference the next phase. The orchestrator (SKILL.md) controls all transitions — after a phase completes, the orchestrator reads the Phase Table and loads the next phase file.
+
 ### Key principle:
-Bot reads ONLY the current phase. Context is not polluted with instructions for future phases. Transition between phases is explicit via Read command.
+Bot reads ONLY the current phase. Context is not polluted with instructions for future phases.
 
 ## Resume Protocol
 
 ### Session file: `{output_dir}/.superscrape-session.json`
 ```json
 {
+  "version": 3,
   "output_dir": "output/2026-03-17-web3-esports-games",
   "topic": "Web3 blockchain games esports 2026",
   "language": "ru",
@@ -86,6 +86,9 @@ Bot reads ONLY the current phase. Context is not polluted with instructions for 
   "created_at": "2026-03-17T19:00:00Z"
 }
 ```
+
+### Session migration:
+If a session file is found without `"version"` field or with `version < 3`, it is a v2 session. The bot shows: "Found session from a previous plugin version. Start fresh or attempt to continue?" via AskUserQuestion. If user chooses continue — bot reads _state/ files (format unchanged) and resumes from the earliest incomplete phase. If start fresh — deletes old session file and begins Phase 0.
 
 ### Algorithm:
 1. On start, SKILL.md checks: `cat .superscrape-session.json 2>/dev/null` in CWD
@@ -111,6 +114,12 @@ After EACH scraper agent returns, immediately Write → `_state/raw_data_{source
 ### Resume protection:
 If session exists and bot tries to start Phase 1, SKILL.md shows: "Found unfinished session. Continue from Phase X or start over?" via AskUserQuestion.
 
+### Multiple sessions:
+If searching `output/*/` finds multiple session files, sort by `created_at` descending and show the user a list via AskUserQuestion: "Found N unfinished sessions: [topic1] (Phase X), [topic2] (Phase Y). Which one to continue, or start new?"
+
+### Review iteration cap fallback:
+Both Phase 4 (data quality review) and Phase 5d (report review) allow maximum 3 reviewer iterations. If after 3 iterations the reviewer still returns "Issues Found", the bot does NOT proceed silently. Instead: show the user remaining issues and ask "Accept current state and continue, or abort?" via AskUserQuestion.
+
 ## CRITICAL RULES (compact table)
 
 | # | Rule |
@@ -118,7 +127,7 @@ If session exists and bot tries to start Phase 1, SKILL.md shows: "Found unfinis
 | 1 | Response language = user's request language |
 | 2 | Firecrawl = CLI via Bash ONLY. Never ToolSearch |
 | 3 | BANNED: browser tools, WebFetch, WebSearch, Chrome MCP |
-| 4 | Phase 5b (dashboard choice) and 5d (deploy) — MANDATORY, never skip |
+| 4 | Phase 5b (dashboard choice) and 5e (deploy) — MANDATORY, never skip |
 | 5 | Subagents REQUIRED: scraper, report-writer, dashboard-generator, reviewers |
 | 6 | Save _state/ after EVERY phase |
 | 7 | Do NOT show final results until Phase 6 complete |
@@ -131,8 +140,10 @@ cat output/{dir}/_state/sources.json > /dev/null 2>&1 && echo "GATE OK" || echo 
 ```
 If GATE FAIL — do not continue, return to previous phase.
 
-### Phase Table with gates:
-| Phase | File | Gate (before transition) |
+### Phase Table with exit gates:
+Gates are EXIT conditions — what must be true to advance to the next phase. Phase 0's gate means "Firecrawl must be authenticated before moving to Phase 1."
+
+| Phase | File | Exit gate (condition to advance) |
 |-------|------|------------------------|
 | 0 | phase-0-onboarding.md | firecrawl --status = OK |
 | 1 | phase-1-clarify.md | _state/config.json saved |
@@ -142,8 +153,8 @@ If GATE FAIL — do not continue, return to previous phase.
 | 5a | phase-5a-report-and-data.md | report.md + data.csv + data.xlsx exist |
 | 5b | phase-5b-dashboard-choice.md | _state/dashboard_choice.json saved |
 | 5c | phase-5c-dashboard-generate.md | dashboard file(s) exist |
-| 5d | phase-5d-deploy.md | deploy done or user declined |
-| 5e | phase-5e-review.md | report-reviewer = Approved |
+| 5d | phase-5d-review.md | report-reviewer = Approved |
+| 5e | phase-5e-deploy.md | deploy done or user declined |
 | 6 | phase-6-verify.md | all checks passed |
 
 ## Component Library Upgrade
@@ -172,9 +183,9 @@ If GATE FAIL — do not continue, return to previous phase.
 ### CDN Links (HTML dashboard):
 ```html
 <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/ag-grid-community/dist/ag-grid-community.min.js"></script>
-<link href="https://cdn.jsdelivr.net/npm/ag-grid-community/styles/ag-grid.css" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/npm/ag-grid-community/styles/ag-theme-alpine.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/ag-grid-community@31/dist/ag-grid-community.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/ag-grid-community@31/styles/ag-grid.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/ag-grid-community@31/styles/ag-theme-alpine.css" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
 ```
@@ -216,8 +227,8 @@ openpyxl>=3.1
 ### Fallback:
 If type not detected → horizontal bar + scatter + full table. Works for any data.
 
-### Sparklines (time series only):
-ECharts mini-instances (80x30px) in AG Grid custom cell renderer. Canvas-based, handles virtual scrolling correctly.
+### Sparklines (time series only, stretch goal):
+ECharts mini-instances (80x30px) in AG Grid custom cell renderer. Canvas-based. Requires careful lifecycle management: destroy ECharts instance when AG Grid scrolls row out of view, recreate on scroll-in. Implementation is complex (~50 lines of cell renderer code). If implementation proves unstable, fallback: show plain values in cells, rely on main ECharts line chart for trend visualization. Mark as optional in implementation plan.
 
 ## Color Palette
 
@@ -277,6 +288,16 @@ Dark theme base: `#0f172a` (Tailwind slate-900)
 
 ## Subagent Changes
 
+### Agent files location:
+Agent definition files exist at `agents/` in the plugin root:
+- `agents/scraper.md`
+- `agents/report-writer.md`
+- `agents/dashboard-generator.md`
+- `agents/data-quality-reviewer.md`
+- `agents/report-reviewer.md`
+
+These files are already implemented. Changes below are format additions to existing files.
+
 ### scraper.md — strict output format:
 Agent must end response with JSON block:
 ```json
@@ -294,10 +315,16 @@ Orchestrator parses this and saves to `_state/raw_data_{source}.json`.
 Max 5 Firecrawl requests per source (budget protection).
 
 ### dashboard-generator.md — explicit input:
-Receives from orchestrator:
-- `normalized.json` → data
-- `config.json` → columns and types
-- `dashboard_choice.json` → streamlit/html/both
+The orchestrator passes file paths as part of the agent's prompt text:
+```
+"Generate dashboards. Read these files:
+- {output_dir}/_state/normalized.json (data + column types)
+- {output_dir}/_state/config.json (topic, columns)
+- {output_dir}/_state/dashboard_choice.json (streamlit/html/both)
+- Read the appropriate kit file from references/
+Write output to {output_dir}/"
+```
+The agent reads files itself via Read tool. The orchestrator does NOT pre-process data into the prompt.
 
 ### data-quality-reviewer.md and report-reviewer.md — strict verdict:
 Must end with:
@@ -316,14 +343,15 @@ Orchestrator searches for `VERDICT:` string. If not found — re-ask agent.
 
 ## Quality Improvements
 
-### Cross-validation (Phase 3):
-If same entity found in 3+ sources — compare numbers. Divergence >30% → flag as "conflicting data" in normalized.json.
+### Cross-validation (Phase 4, not Phase 3):
+During normalization in Phase 4: if same entity found in 3+ sources — compare numbers. Divergence >30% → flag as "conflicting data" in normalized.json. Phase 3 only collects raw data; Phase 4 handles all validation and cross-checking.
 
 ### Dead project detection (Phase 4):
 If official site returns 404 or last activity >6 months ago → mark as "possibly dead".
 
-### Firecrawl budget management (Phase 0):
-Check `firecrawl --status` → record credit count. In Phase 3 distribute credits evenly across sources.
+### Firecrawl budget management:
+Phase 0: Check `firecrawl --status` → save credit count to `_state/credits.json`: `{"initial": 525, "timestamp": "..."}`.
+Phase 3: Read `_state/credits.json` → calculate budget per source: `floor(initial / number_of_sources)`. Each scraper agent receives its budget in the prompt. Max 5 requests per source regardless of budget.
 
 ### Progress reporting:
 After each scraper agent completes → message in chat: "3/5 sources collected".
@@ -348,7 +376,20 @@ If rate limit hit → explicit message: "Rate limit reached, data saved. Say 'co
 6. Assembly instructions
 
 ### Key principle:
-ECharts JSON configs are IDENTICAL between HTML and Streamlit kits. Dashboard-generator builds config once, kit determines how to render it.
+ECharts chart configs are STRUCTURALLY IDENTICAL between HTML and Streamlit kits — same keys, same values, same structure. The difference is rendering:
+- HTML kit: `echarts.init(dom).setOption(config)` — config is a JS object
+- Streamlit kit: `st_echarts(config)` — config is a Python dict
+
+Since JSON is valid in both JS and Python, the dashboard-generator builds the config as a JSON structure once. The kit file wraps it in the appropriate language. This is not "identical source code" — it is identical data structure with different wrappers.
+
+### Kit file content scope:
+Each kit file contains COMPLETE working code snippets (not pseudocode). The dashboard-generator copies snippets, substitutes data, and assembles into one file. The kit file is a reference — not executed directly.
+
+### dashboard-template.md (rewritten) contains:
+- Decision table (data type → chart types) — same as in this spec
+- Pointer to which kit file to read based on dashboard_choice
+- Color palette and typography constants
+- NO code — code lives only in kit files
 
 ## What Does NOT Change
 
