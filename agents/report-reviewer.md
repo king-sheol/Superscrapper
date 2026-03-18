@@ -104,3 +104,8 @@ OR
 - Weak insights/recommendations are ISSUES (fix required)
 - Formatting problems are ADVISORY (don't block)
 - Max 3 review iterations — if still failing, surface to human
+- Your response MUST end with exactly one of these lines (no markdown formatting):
+  `VERDICT: Approved`
+  or
+  `VERDICT: Issues Found`
+  The orchestrator searches for "VERDICT:" to determine gate passage. If missing, you will be re-asked.
