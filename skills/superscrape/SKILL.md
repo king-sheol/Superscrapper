@@ -198,6 +198,18 @@ This phase runs in the main context (not subagents) because it needs the full pi
 
 ### Phase 5: Generate Output
 
+**CRITICAL: Phase 5 has 5 mandatory substeps (5a→5b→5c→5d→5e). Do NOT skip any. Do NOT show final results until ALL substeps are done.**
+
+When entering Phase 5, update TodoWrite to track each substep:
+```
+TodoWrite:
+- [in_progress] 5a: Generate report + data files
+- [pending] 5b: Ask user about dashboard choice
+- [pending] 5c: Generate chosen dashboard(s)
+- [pending] 5d: Deploy dashboard (if chosen)
+- [pending] 5e: Review report quality
+```
+
 **5a: Report + Data (always, in parallel)**
 
 First, create the output directory:
@@ -224,16 +236,20 @@ Then dispatch two agents simultaneously with this context:
 Use the report format from `references/report-format.md`.
 Use XLSX generation instructions from `references/xlsx-generator.md`.
 
-**5b: Dashboard Choice**
+**5b: Dashboard Choice (MANDATORY — do NOT skip this step)**
 
-Use AskUserQuestion to ask:
+Immediately after 5a completes, you MUST ask the user about dashboards. Do NOT present final results yet.
+
+Use AskUserQuestion:
 ```
-"Данные собраны и отчёт готов. Какой дашборд сгенерировать?"
-├── Streamlit (для VPS) — интерактивный, с фильтрами и графиками
+"Отчёт и данные готовы. Какой дашборд сгенерировать?"
+├── Streamlit (для VPS) — интерактивный, с фильтрами и графиками (Recommended)
 ├── HTML (для GitHub Pages) — статический, быстрая загрузка
 ├── Оба варианта
 └── Без дашборда — только отчёт и Excel
 ```
+
+If user chooses "Без дашборда", skip 5c and 5d and go directly to 5e.
 
 **5c: Generate chosen dashboard(s)**
 
