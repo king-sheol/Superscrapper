@@ -163,9 +163,9 @@ Gates are EXIT conditions — what must be true to advance to the next phase. Ph
 | Component | Library | Version | Size | License |
 |-----------|---------|---------|------|---------|
 | Charts | Apache ECharts | 5.x | ~1MB | Apache 2.0 |
-| Tables | AG Grid Community | latest | ~500KB | MIT |
+| Tables | AG Grid Community | 31.x | ~500KB | MIT |
 | Layout/CSS | Tailwind CSS CDN | 3.x | ~300KB | MIT |
-| Icons | Lucide Icons | latest | ~10KB per icon | ISC |
+| Icons | Lucide Icons | 0.460 | ~10KB per icon | ISC |
 
 ### Why ECharts over Plotly:
 - Animated transitions (bars grow on load, smooth data updates)
@@ -187,7 +187,7 @@ Gates are EXIT conditions — what must be true to advance to the next phase. Ph
 <link href="https://cdn.jsdelivr.net/npm/ag-grid-community@31/styles/ag-grid.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/ag-grid-community@31/styles/ag-theme-alpine.css" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
-<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://unpkg.com/lucide@0.460"></script>
 ```
 
 ### Streamlit dependencies:
