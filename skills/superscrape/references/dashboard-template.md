@@ -1,265 +1,145 @@
-# Dashboard Templates
+# Dashboard Template — Design System & Decision Logic
 
-Two dashboard types: Streamlit (for VPS) and static HTML (for GitHub Pages).
-Both use the same decision table for choosing visualizations.
+Reference for the dashboard-generator agent. Contains visualization selection rules,
+auto-detection logic, and visual design tokens. Does NOT contain implementation code.
 
-## Decision Table: Data Type → Visualization
+- **For HTML dashboards** → read `dashboard-html-kit.md`
+- **For Streamlit dashboards** → read `dashboard-streamlit-kit.md`
 
-| Data Type | Primary Chart | Comparison Chart |
-|---|---|---|
-| Rating/comparison (CRM, laptops) | Horizontal bar chart (sorted by key metric) | Radar chart (top 5) |
-| Prices/numeric ranges | Box plot or violin plot | Scatter (price vs metric) |
-| Time series (stocks, trends) | Line chart | Area chart (stacked) |
-| Geographic data | Choropleth or bubble map | Bar by region |
-| Categories + numbers | Grouped bar chart | Heatmap (correlations) |
+---
 
-## KPI Cards (auto-select based on data)
+## 1. Decision Table: Data Type → Visualization
 
-- Numeric columns: show min, max, average, median
-- Ratings: show leader name + average score
-- Prices: show range (min–max) + median
-- Always show: total records count, sources count, collection date
+| Data Type | KPI Cards | Primary Chart | Comparison Chart | Table |
+|-----------|-----------|---------------|------------------|-------|
+| Rating / comparison | Top-1, avg score, total, sources | ECharts horizontal bar (gradient) | ECharts radar (top 5) | AG Grid: sort by rating |
+| Prices | Min / max / median, best value | ECharts scatter | ECharts boxplot | AG Grid: conditional coloring |
+| Time series | Latest, trend %, min / max | ECharts line (area fill) | ECharts heatmap | AG Grid (plain values) |
+| Segment | Leader share, count, total | ECharts treemap / sunburst | ECharts stacked bar | AG Grid: group by segment |
+| Fallback | total records, sources, date | Horizontal bar | Scatter | Full AG Grid |
 
-## Streamlit Dashboard Template (dashboard.py)
+### How to pick the data type
 
-```python
-import streamlit as st
-import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
-import json
+1. If `normalized.json` contains `column_types` — use them as the starting hypothesis.
+2. Confirm with the actual data (see Auto-detection below).
+3. If one numeric column clearly dominates (ratings, scores, prices) — pick the matching row.
+4. If there are date columns — pick Time series.
+5. If there is a categorical column with <15 unique values and a numeric column — pick Segment.
+6. Otherwise — Fallback.
 
-# Page config
-st.set_page_config(
-    page_title="TOPIC — Data Dashboard",
-    page_icon="📊",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+---
 
-# Theme
-TEMPLATE = "plotly_dark"
-COLORS = px.colors.qualitative.Set2
+## 2. Auto-detection Rules (Dual Verification)
 
-st.markdown("""
-<style>
-    .stMetric { background-color: #1e1e2e; padding: 1rem; border-radius: 0.5rem; }
-    .stMetric label { color: #cdd6f4; }
-    .stMetric [data-testid="stMetricValue"] { color: #89b4fa; font-size: 1.8rem; }
-</style>
-""", unsafe_allow_html=True)
+The agent MUST verify column types from two independent sources before choosing charts.
 
-# Load data
-df = pd.read_csv("data.csv")
+### Source A — normalized.json metadata
 
-# Header
-st.title("📊 TOPIC")
-st.caption(f"Date: DATE | Records: {len(df)} | Sources: N")
-
-# --- KPI Cards ---
-# Auto-detect numeric columns and show summary metrics
-numeric_cols = df.select_dtypes(include=["number"]).columns.tolist()
-kpi_cols = st.columns(min(len(numeric_cols) + 1, 4))
-
-kpi_cols[0].metric("Total Records", len(df))
-for i, col in enumerate(numeric_cols[:3]):
-    kpi_cols[i + 1].metric(
-        f"Avg {col.title()}",
-        f"{df[col].mean():.1f}",
-        f"Range: {df[col].min():.1f} – {df[col].max():.1f}"
-    )
-
-# --- Sidebar Filters ---
-st.sidebar.header("Filters")
-df_filtered = df.copy()
-
-# Auto-detect categorical columns (non-numeric, low cardinality)
-cat_cols = [c for c in df.columns if df[c].dtype == "object" and df[c].nunique() < 20
-            and c not in ["Source", "Collection Date"]]
-
-for col in cat_cols:
-    options = df[col].dropna().unique().tolist()
-    selected = st.sidebar.multiselect(col, options, default=options)
-    df_filtered = df_filtered[df_filtered[col].isin(selected)]
-
-# --- Primary Visualization ---
-# Choose chart type based on data: if there's a clear "name" + numeric → bar chart
-st.subheader("Overview")
-name_col = df.columns[0]  # First column is typically the object name
-if numeric_cols:
-    primary_metric = numeric_cols[0]
-    fig = px.bar(
-        df_filtered.sort_values(primary_metric, ascending=True).tail(20),
-        x=primary_metric, y=name_col, orientation="h",
-        color=primary_metric, color_continuous_scale="Viridis",
-        template=TEMPLATE
-    )
-    fig.update_layout(colorway=COLORS, height=600)
-    st.plotly_chart(fig, use_container_width=True)
-
-# --- Comparison Visualization ---
-st.subheader("Comparison")
-if len(numeric_cols) >= 2:
-    fig2 = px.scatter(
-        df_filtered, x=numeric_cols[0], y=numeric_cols[1],
-        hover_name=name_col,
-        size=numeric_cols[2] if len(numeric_cols) >= 3 else None,
-        color=cat_cols[0] if cat_cols else None,
-        template=TEMPLATE
-    )
-    fig2.update_layout(colorway=COLORS)
-    st.plotly_chart(fig2, use_container_width=True)
-
-# --- Data Table ---
-st.subheader("Full Data")
-st.dataframe(df_filtered, use_container_width=True, hide_index=True)
-
-# --- Metadata ---
-with st.expander("Sources & Confidence"):
-    st.markdown("| Source | Reliability | Justification |")
-    st.markdown("|--------|------------|---------------|")
-    # Sources table populated from metadata
-    st.info("Source confidence data loaded from report metadata")
+Read `column_types` from `normalized.json`. Example:
+```json
+{
+  "column_types": {
+    "name": "string",
+    "rating": "numeric",
+    "price": "numeric",
+    "category": "categorical",
+    "date": "date"
+  }
+}
 ```
 
-### Streamlit Styling
+### Source B — data.csv first 5 rows
 
-```python
-# Apply dark theme via .streamlit/config.toml or inline:
-st.markdown("""
-<style>
-    .stMetric { background-color: #1e1e2e; padding: 1rem; border-radius: 0.5rem; }
-    .stMetric label { color: #cdd6f4; }
-    .stMetric [data-testid="stMetricValue"] { color: #89b4fa; font-size: 1.8rem; }
-</style>
-""", unsafe_allow_html=True)
+1. Read the first 5 data rows from `data.csv`.
+2. For each column, attempt `parseFloat(value)` (JS) or `pd.to_numeric(value)` (Python).
+3. If **>80%** of non-empty values parse as numbers → mark column as **numeric**.
+4. Check for date patterns: `YYYY-MM-DD` or `DD.MM.YYYY` → mark as **date**.
+5. Everything else → **string** (if <15 unique values → **categorical**).
+
+### Conflict resolution
+
+If Source A and Source B disagree on a column type → **trust Source B** (actual data wins).
+
+### Final column classification
+
+After verification, classify each column:
+- **name_col** — first string column (used as label axis)
+- **numeric_cols** — all numeric columns (used for values, KPIs)
+- **date_col** — first date column if present
+- **category_cols** — categorical columns with <15 unique values (used for filters, grouping)
+
+---
+
+## 3. Color Palette
+
+```
+Dark base:     #0f172a   (page background)
+Surface:       #1e293b   (cards, chart backgrounds)
+Border:        #334155   (dividers, grid lines)
+Text primary:  #f1f5f9
+Text secondary:#94a3b8
 ```
 
-### Plotly Theme
+Chart colors (8-color cycle, use in order):
 
-```python
-# Use dark template for all charts
-template = "plotly_dark"
-color_palette = px.colors.qualitative.Set2
+| Index | Hex       | Usage example          |
+|-------|-----------|------------------------|
+| 0     | `#60a5fa` | Primary bars, main line |
+| 1     | `#34d399` | Secondary series        |
+| 2     | `#fbbf24` | Warnings, third series  |
+| 3     | `#f87171` | Negative, alerts        |
+| 4     | `#a78bfa` | Fifth series            |
+| 5     | `#22d3ee` | Sixth series            |
+| 6     | `#fb923c` | Seventh series          |
+| 7     | `#e879f9` | Eighth series           |
 
-# Apply to all figures:
-fig.update_layout(template=template, colorway=color_palette)
+Gradient for bar charts: from `#60a5fa` (left/bottom) to `#3b82f6` (right/top).
+
+---
+
+## 4. Typography
+
+Font stack (system fonts, no external loading):
+
+```css
+font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 ```
 
-## Static HTML Dashboard Template (dashboard.html)
-
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>[TOPIC] — Dashboard</title>
-    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #1e1e2e; color: #cdd6f4; }
-        .container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
-        header { text-align: center; margin-bottom: 2rem; }
-        header h1 { font-size: 2rem; color: #89b4fa; }
-        header p { color: #6c7086; margin-top: 0.5rem; }
-        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
-        .kpi-card { background: #313244; padding: 1.5rem; border-radius: 0.75rem; text-align: center; }
-        .kpi-card .label { color: #6c7086; font-size: 0.85rem; text-transform: uppercase; }
-        .kpi-card .value { color: #89b4fa; font-size: 2rem; font-weight: bold; margin: 0.5rem 0; }
-        .kpi-card .detail { color: #a6adc8; font-size: 0.85rem; }
-        .chart-section { background: #313244; border-radius: 0.75rem; padding: 1.5rem; margin-bottom: 1.5rem; }
-        .chart-section h2 { color: #cdd6f4; font-size: 1.2rem; margin-bottom: 1rem; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; }
-        th { background: #45475a; color: #cdd6f4; padding: 0.75rem; text-align: left; cursor: pointer; }
-        th:hover { background: #585b70; }
-        td { padding: 0.75rem; border-bottom: 1px solid #45475a; }
-        tr:hover { background: #45475a33; }
-        .search-box { width: 100%; padding: 0.75rem; background: #45475a; border: none; color: #cdd6f4; border-radius: 0.5rem; margin-bottom: 1rem; font-size: 1rem; }
-        .search-box::placeholder { color: #6c7086; }
-        .confidence { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 0.25rem; font-size: 0.8rem; }
-        .confidence.high { background: #a6e3a133; color: #a6e3a1; }
-        .confidence.medium { background: #f9e2af33; color: #f9e2af; }
-        .confidence.low { background: #f38ba833; color: #f38ba8; }
-        @media (max-width: 768px) { .kpi-grid { grid-template-columns: 1fr 1fr; } }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <header>
-            <h1>📊 [TOPIC]</h1>
-            <p>Date: [DATE] | Records: [N] | Sources: [M]</p>
-        </header>
-
-        <div class="kpi-grid">
-            <!-- KPI cards inserted by script -->
-        </div>
-
-        <div class="chart-section">
-            <h2>Overview</h2>
-            <div id="chart-primary"></div>
-        </div>
-
-        <div class="chart-section">
-            <h2>Comparison</h2>
-            <div id="chart-comparison"></div>
-        </div>
-
-        <div class="chart-section">
-            <h2>Data</h2>
-            <input type="text" class="search-box" placeholder="Search..." oninput="filterTable(this.value)">
-            <table id="data-table">
-                <!-- Table inserted by script -->
-            </table>
-        </div>
-
-        <div class="chart-section">
-            <h2>Sources & Confidence</h2>
-            <div id="confidence-map"></div>
-        </div>
-    </div>
-
-    <script>
-    // DATA EMBEDDED HERE AS JSON
-    const DATA = [/* array of objects */];
-    const METADATA = {/* topic, date, sources with confidence */};
-
-    // Plotly dark layout
-    const layout = {
-        paper_bgcolor: '#313244',
-        plot_bgcolor: '#313244',
-        font: { color: '#cdd6f4' },
-        xaxis: { gridcolor: '#45475a' },
-        yaxis: { gridcolor: '#45475a' },
-        margin: { l: 50, r: 20, t: 40, b: 40 }
-    };
-
-    // Build KPI cards, charts, and table from DATA
-    // (Generated dynamically based on actual columns and data types)
-
-    // Table search/filter
-    function filterTable(query) {
-        const rows = document.querySelectorAll('#data-table tbody tr');
-        query = query.toLowerCase();
-        rows.forEach(row => {
-            row.style.display = row.textContent.toLowerCase().includes(query) ? '' : 'none';
-        });
-    }
-
-    // Table sorting
-    document.querySelectorAll('#data-table th').forEach((th, idx) => {
-        th.addEventListener('click', () => sortTable(idx));
-    });
-
-    function sortTable(colIdx) {
-        // Sort implementation
-    }
-    </script>
-</body>
-</html>
+Numeric values MUST use:
+```css
+font-variant-numeric: tabular-nums;
 ```
 
-## Docker Deployment Files
+This ensures columns of numbers align vertically.
+
+Size scale:
+- Page title: 1.5rem, font-weight 700
+- Section title: 1.125rem, font-weight 600
+- KPI value: 2rem, font-weight 700
+- KPI label: 0.75rem, uppercase, letter-spacing 0.05em
+- Body / table: 0.875rem
+- Small / caption: 0.75rem
+
+---
+
+## 5. Kit File Pointers
+
+The design tokens and decision table above are shared by ALL dashboard types.
+Implementation details live in separate kit files:
+
+| Dashboard type | Kit file | When to use |
+|----------------|----------|-------------|
+| Static HTML | `dashboard-html-kit.md` | GitHub Pages, no server needed |
+| Streamlit | `dashboard-streamlit-kit.md` | VPS with Docker, interactive |
+
+The dashboard-generator agent reads THIS file first (for decisions), then reads the
+appropriate kit file (for code snippets).
+
+---
+
+## 6. Docker Deployment Configs
+
+Used when deploying Streamlit dashboards to the user's VPS.
 
 ### Dockerfile
 ```dockerfile
