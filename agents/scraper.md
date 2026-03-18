@@ -63,29 +63,30 @@ Always report what happened and why in your output.
 
 ## Output
 
-Return a structured result:
+Your response MUST end with a JSON code block containing the structured result:
+
+```json
+{
+  "source": "DappRadar",
+  "url": "https://dappradar.com/...",
+  "status": "SUCCESS",
+  "records_count": 15,
+  "data": [
+    {"Name": "Game1", "Genre": "FPS", "DAU": 50000},
+    {"Name": "Game2", "Genre": "MOBA", "DAU": 30000}
+  ],
+  "issues": ["Page 3 returned 403, skipped"],
+  "confidence": "High"
+}
 ```
-## Scraper Result: [Source Name]
 
-### Status: SUCCESS | PARTIAL | FAILED
-
-### Data Collected: N records
-
-| [column 1] | [column 2] | ... | Source | Collection Date |
-|-------------|-------------|-----|--------|-----------------|
-| ...         | ...         | ... | [URL]  | YYYY-MM-DD      |
-
-### Issues (if any)
-- [description of any problems encountered]
-
-### Source Assessment
-- Reliability: High | Medium | Low
-- Reason: [why this reliability level]
-```
+Status values: SUCCESS (all data collected), PARTIAL (some pages failed), FAIL (no data).
+The orchestrator will parse this JSON and save as `_state/raw_data_{source_slug}.json`.
 
 ## Rules
 
 - **NEVER use browser automation tools** (Claude_in_Chrome, WebFetch, WebSearch, read_page, computer, navigate, etc.). ALL web access goes through Firecrawl CLI via Bash ONLY. Browser tools cause silent freezes.
+- **Max 5 Firecrawl requests per source** — do not exceed. If more pages exist, prioritize highest-value pages.
 - Extract ONLY the requested columns — do not add extra data
 - If a field is not available, use "N/A" with a note why
 - Always include Source URL and Collection Date for every row
