@@ -12,6 +12,12 @@ description: >
 
 Collect, normalize, and analyze data from multiple web sources. Produce structured analytical reports with XLSX and interactive dashboards.
 
+## CRITICAL RULES (read before anything else)
+
+1. **Language**: ALWAYS respond in the same language the user used. If the user writes in Russian — ALL output (plans, reports, questions, checkpoints, TodoWrite labels, dashboard UI) must be in Russian. If in English — in English. This is non-negotiable.
+
+2. **Firecrawl is a CLI tool, NOT an MCP tool**: Do NOT use ToolSearch to find Firecrawl tools. Do NOT look for MCP tools. Firecrawl is invoked ONLY via `Bash` tool with CLI commands like `firecrawl search`, `firecrawl scrape`, etc. See the CLI Reference table below.
+
 ## Phase 0: Firecrawl Onboarding (auto, before any work)
 
 Before starting the workflow, **always** run this check:
@@ -303,7 +309,6 @@ When a source is unavailable, do NOT just try another source. Systematically dia
 
 ## Key Rules
 
-- **Language**: Always respond in the same language the user used in their request. If the user writes in Russian — all output, plans, reports, questions, and checkpoints must be in Russian. If in English — in English.
 - Numbers always include context (good/bad, above/below market average)
 - Missing data → explicit N/A with explanation why
 - Highlight anomalies and insights, don't just list facts
