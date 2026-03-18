@@ -27,9 +27,10 @@ description: >
 On "продолжай" / "continue" / any resume:
 
 1. Search for `output/*/.superscrape-session.json`
-2. If found — ask: resume or start fresh?
-3. If resume — read `_state/` files to determine last completed phase, re-init TodoWrite from that point
-4. If not found or user chooses fresh — start from Phase 0
+2. If multiple found — sort by `created_at`, show list via AskUserQuestion, let user pick which session
+3. If one found — check `version` field: if missing or < 3, it's a v2 session — ask user to start fresh or continue with limited compat
+4. If resumable — read `_state/` files to determine last completed phase, re-init TodoWrite from that point
+5. If not found or user chooses fresh — start from Phase 0
 
 ## Firecrawl CLI Reference
 
@@ -44,7 +45,7 @@ On "продолжай" / "continue" / any resume:
 
 | Phase | File | Gate condition |
 |-------|------|----------------|
-| 0 | `phases/phase-0-onboarding.md` | firecrawl authenticated + python 3.8+ |
+| 0 | `phases/phase-0-onboarding.md` | firecrawl authenticated + python 3.8+ + credits.json saved |
 | 1 | `phases/phase-1-clarify.md` | `_state/config.json` saved |
 | 2 | `phases/phase-2-discover.md` | `_state/sources.json` saved + user confirmed |
 | 3 | `phases/phase-3-collect.md` | `_state/raw_data_*.json` saved + user confirmed preview |
@@ -56,26 +57,24 @@ On "продолжай" / "continue" / any resume:
 | 5e | `phases/phase-5e-deploy.md` | Dashboard deployed (or user declined) |
 | 6 | `phases/phase-6-verify.md` | All files verified + Phase 5 completion gate passed |
 
+## Key State Files
+
+| File | Created in | Purpose |
+|------|-----------|---------|
+| credits.json | Phase 0 | initial Firecrawl credit count |
+| config.json | Phase 1 | topic, columns, scope |
+| sources.json | Phase 2 | approved source list |
+| normalized.json | Phase 4 | clean merged dataset |
+
 ## TodoWrite Init
 
-At the start, initialize TodoWrite with:
-```
-0. [in_progress] Phase 0: Firecrawl & Python check
-1. [pending] Phase 1: Accept task & clarify columns
-2. [pending] Phase 2: Discover sources
-3. [pending] Phase 3: Collect data
-4. [pending] Phase 4: Normalize & validate
-5a. [pending] Phase 5a: Report + data files
-5b. [pending] Phase 5b: Dashboard choice
-5c. [pending] Phase 5c: Generate dashboard
-5d. [pending] Phase 5d: Review report
-5e. [pending] Phase 5e: Deploy dashboard
-6. [pending] Phase 6: Verify & present
-```
+At start, init TodoWrite with one item per phase from the Phase Table above (Phase 0 = in_progress, rest = pending). On resume, mark completed phases done and set next phase to in_progress.
 
 ## Dispatch Loop
 
 For each phase: read the phase file, execute its instructions, verify the gate condition, mark TodoWrite complete, then read the next phase file. The orchestrator controls all transitions — phase files do NOT reference the next phase.
+
+**Note**: When reading a phase file, substitute `{output_dir}` with the actual output directory path from session file or Phase 1 config.
 
 ## Output Directory Format
 
