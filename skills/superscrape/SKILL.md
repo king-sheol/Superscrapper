@@ -14,13 +14,38 @@ Collect, normalize, and analyze data from multiple web sources. Produce structur
 
 ## CRITICAL RULES (read before anything else)
 
-1. **Language**: ALWAYS respond in the same language the user used. If the user writes in Russian — ALL output (plans, reports, questions, checkpoints, TodoWrite labels, dashboard UI) must be in Russian. If in English — in English. This is non-negotiable.
+1. **Language**: ALWAYS respond in the user's CONVERSATION language, not the topic language. If the user writes in Russian but the topic is "Web3 games" — ALL output (plans, reports, questions, checkpoints, TodoWrite labels, dashboard UI text) must be in Russian. Non-negotiable.
 
 2. **Firecrawl is a CLI tool, NOT an MCP tool**: Do NOT use ToolSearch to find Firecrawl tools. Do NOT look for MCP tools. Firecrawl is invoked ONLY via `Bash` tool with CLI commands like `firecrawl search`, `firecrawl scrape`, etc. See the CLI Reference table below.
 
-3. **NEVER use browser automation**: Do NOT use Claude_in_Chrome, WebFetch, WebSearch, or any browser/MCP browsing tools for data collection. ALL web access must go through Firecrawl CLI. Browser tools cause silent freezes and are unreliable for scraping. The ONLY exception is `gh` CLI for GitHub operations in Phase 5d.
+3. **NEVER use browser automation**: Do NOT use Claude_in_Chrome, WebFetch, WebSearch, or any browser/MCP browsing tools for data collection. ALL web access must go through Firecrawl CLI. The ONLY exception is `gh` CLI for GitHub operations in Phase 5d. **Even on resume after rate limit — NEVER fall back to WebSearch/WebFetch.** If Firecrawl credits are exhausted, STOP and tell the user.
 
-4. **NEVER skip deploy onboarding (Phase 5d)**: After generating a dashboard, you MUST ask the user where to deploy it and execute the deployment. Do NOT just show files and stop.
+4. **NEVER skip Phase 5 substeps**: Phase 5 has 5 mandatory substeps (5a→5b→5c→5d→5e). Each one is a separate TodoWrite item. Do NOT show final results until ALL are done.
+
+5. **NEVER skip Phase 6**: You CANNOT present final results before Phase 6 verification is complete. Evidence before assertions.
+
+6. **ALWAYS use subagents**: report-writer, dashboard-generator, data-quality-reviewer, report-reviewer MUST be dispatched as Agent subagents. Do NOT write report.md or generate files directly in the main context.
+
+7. **ALWAYS save _state/ after each phase**: A phase is NOT complete until its `_state/*.json` file is written. See Intermediate Data Persistence below.
+
+## Resume Protocol (MANDATORY on any resume / "продолжай")
+
+When you receive "продолжай", "continue", or start working on an existing topic:
+
+1. **Find the output directory**: Look for `output/YYYY-MM-DD-*/` in the working directory
+2. **Check `_state/` files** in this order:
+   ```
+   _state/normalized.json  → exists? Skip to Phase 5
+   _state/raw_data.json    → exists? Skip to Phase 4
+   _state/sources.json     → exists? Skip to Phase 3 (confirm sources with user first)
+   _state/config.json      → exists? Skip to Phase 2
+   Nothing                 → Start from Phase 1
+   ```
+3. **Restore TodoWrite** based on the last completed phase
+4. **Tell the user**: "Нашёл данные от предыдущего запуска ({file}). Продолжаю с фазы N."
+5. **Continue strictly from that phase** — do NOT restart from scratch, do NOT skip ahead
+
+**If _state/ files are empty or corrupted**: Tell the user what happened and ask whether to restart or try to recover.
 
 ## Phase 0: Firecrawl Onboarding (auto, before any work)
 
@@ -74,20 +99,24 @@ wait
 
 ## Workflow
 
-Follow these 6 phases strictly.
+Follow these 6 phases strictly. Every phase has a GATE — you cannot proceed until the gate condition is met.
 
-**At the very start**, initialize TodoWrite with all phases:
+**At the very start**, initialize TodoWrite with ALL phases and substeps:
 ```
 TodoWrite:
-0. [in_progress] Phase 0: Firecrawl & Python onboarding check
+0. [in_progress] Phase 0: Firecrawl & Python check
 1. [pending] Phase 1: Accept task & clarify columns
 2. [pending] Phase 2: Discover sources
-3. [pending] Phase 3: Collect data
-4. [pending] Phase 4: Normalize & validate
-5. [pending] Phase 5: Generate output (report + dashboard + deploy)
+3. [pending] Phase 3: Collect data from sources
+4. [pending] Phase 4: Normalize, validate & quality review
+5a. [pending] Phase 5a: Generate report + data files (subagents)
+5b. [pending] Phase 5b: Ask user about dashboard choice
+5c. [pending] Phase 5c: Generate chosen dashboard(s) (subagent)
+5d. [pending] Phase 5d: Deploy dashboard
+5e. [pending] Phase 5e: Review report quality (subagent)
 6. [pending] Phase 6: Verify & present results
 ```
-Update TodoWrite as you progress through each phase.
+Update TodoWrite as you progress. Mark each item completed ONLY when its gate is passed.
 
 ## Output Directory
 
@@ -97,28 +126,25 @@ All generated files go into a dated subdirectory:
 ```
 Where `{topic-slug}` is the topic in lowercase with spaces replaced by hyphens (e.g., `crm-systems`).
 
-**Create this directory at the START of Phase 2** (not Phase 5!) so intermediate data is persisted.
+**Create this directory and `_state/` at the START of Phase 1** so intermediate data is persisted from the very beginning.
 
 ## Intermediate Data Persistence
 
-**CRITICAL**: Agent temp files disappear between sessions. To survive rate limits, session crashes, or "продолжай" after a break, save intermediate state to the output directory after EACH phase:
+**CRITICAL**: Agent temp files disappear between sessions. Save state to output directory DURING each phase, not just at the end:
 
-| After Phase | Save to file | Contents |
-|-------------|-------------|----------|
-| Phase 1 | `output/{dir}/_state/config.json` | topic, data_type, columns list, scope |
-| Phase 2 | `output/{dir}/_state/sources.json` | discovered sources with URLs, types, quality |
-| Phase 3 | `output/{dir}/_state/raw_data.json` | raw scraped data from all agents (merge after each agent returns) |
-| Phase 4 | `output/{dir}/_state/normalized.json` | cleaned, deduplicated, validated dataset |
+| When | Save to file | Contents |
+|------|-------------|----------|
+| End of Phase 1 | `_state/config.json` | topic, data_type, columns list, scope |
+| End of Phase 2 | `_state/sources.json` | approved sources with URLs, types, quality |
+| **After EACH scraper agent returns** in Phase 3 | `_state/raw_data.json` | append/merge new data immediately |
+| Before Phase 3 checkpoint | `_state/raw_data.json` | full dataset (must be saved BEFORE showing preview) |
+| End of Phase 4 | `_state/normalized.json` | cleaned dataset + analysis + confidence map |
 
-Format: JSON. Always overwrite with latest state.
+**Phase 3 incremental save is critical**: Do NOT wait until all agents finish. After each agent returns, immediately merge its data into `_state/raw_data.json`. This way, even if rate limit hits mid-Phase 3, collected data is preserved.
 
-**On resume**: At the start of each phase, check if `_state/{file}` exists. If it does — read it and skip the phase that produced it. This means:
-- If `config.json` exists → skip Phase 1
-- If `sources.json` exists → skip Phase 2, ask user to confirm sources
-- If `raw_data.json` exists → skip Phase 3, go to Phase 4
-- If `normalized.json` exists → skip Phase 4, go to Phase 5
+Format: JSON. Overwrite with latest state on each save.
 
-Always tell the user: "Нашёл данные от предыдущего запуска. Продолжаю с фазы N."
+**On resume**: See Resume Protocol above.
 
 ### Phase 1: Accept Task & Clarify
 
@@ -150,6 +176,8 @@ mkdir -p output/YYYY-MM-DD-{topic-slug}/_state
 ```
 Write `_state/config.json` with: `{"topic": "...", "data_type": "...", "columns": [...], "scope": "..."}`
 
+**GATE**: config.json saved → proceed to Phase 2.
+
 ### Phase 2: Source Discovery (2-3 agents in parallel)
 
 Dispatch 2-3 agents in parallel using the Agent tool:
@@ -177,6 +205,8 @@ Wait for user confirmation before proceeding.
 
 **Save state**: Write `_state/sources.json` with the approved source list (URLs, types, quality).
 
+**GATE**: sources.json saved + user confirmed → proceed to Phase 3.
+
 ### Phase 3: Data Collection (up to 5 scraper agents in parallel)
 
 For each approved source, dispatch a **scraper** subagent (see agents/scraper.md):
@@ -187,15 +217,19 @@ For each approved source, dispatch a **scraper** subagent (see agents/scraper.md
 
 **Rate limiting**: instruct agents to pause between requests.
 
+**Incremental save**: After EACH scraper agent returns, IMMEDIATELY merge its data into `_state/raw_data.json`. Do NOT wait for all agents to finish.
+
 **Error handling** (Root Cause approach):
 - If source is blocked: diagnose (HTTP code? timeout? rate limit? geo-block?)
+- HTTP 404 → verify URL is correct, try `firecrawl map` on domain, find alternative
 - Rate limit → increase pause, retry
-- JS-only rendering → use Firecrawl with JS rendering
+- JS-only rendering → use Firecrawl with `--wait-for 3000`
 - Geo-block → find alternative source
 - No data → mark N/A with explanation
 - Report all issues to the user
 
-**Checkpoint**: After collection, show a preview:
+**Checkpoint** (MANDATORY — save data BEFORE showing this):
+First save `_state/raw_data.json` with ALL collected data, then show preview:
 ```
 "Собрал N записей из M источников. Вот первые 5:"
 | Name | Price | Rating | Source | Date |
@@ -203,7 +237,7 @@ For each approved source, dispatch a **scraper** subagent (see agents/scraper.md
 "Колонки верные? Данные выглядят правильно?"
 ```
 
-**Save state**: Write `_state/raw_data.json` with ALL collected data from ALL agents. This is critical — agent temp files will be lost between sessions.
+**GATE**: raw_data.json saved + user confirmed preview → proceed to Phase 4.
 
 ### Phase 4: Normalize & Validate (sequential, orchestrator)
 
@@ -219,9 +253,10 @@ This phase runs in the main context (not subagents) because it needs the full pi
 
 3. **Fill gaps**: mark missing data as N/A with explanation
 
-4. **Dispatch data-quality-reviewer subagent** (see agents/data-quality-reviewer.md):
+4. **Dispatch data-quality-reviewer subagent** (MANDATORY — see agents/data-quality-reviewer.md):
    - Check completeness, consistency, anomalies
    - If Issues Found → fix and re-dispatch (max 3 iterations)
+   - Phase 4 is NOT complete until data-quality-reviewer returns **Approved**
 
 5. **Analyze**:
    - Identify leaders and why
@@ -233,28 +268,13 @@ This phase runs in the main context (not subagents) because it needs the full pi
 
 **Save state**: Write `_state/normalized.json` with the full normalized dataset, analysis results, and confidence map.
 
+**GATE**: normalized.json saved + data-quality-reviewer returned Approved → proceed to Phase 5.
+
 ### Phase 5: Generate Output
 
-**CRITICAL: Phase 5 has 5 mandatory substeps (5a→5b→5c→5d→5e). Do NOT skip any. Do NOT show final results until ALL substeps are done.**
+**5a: Report + Data (always, in parallel — use subagents)**
 
-When entering Phase 5, update TodoWrite to track each substep:
-```
-TodoWrite:
-- [in_progress] 5a: Generate report + data files
-- [pending] 5b: Ask user about dashboard choice
-- [pending] 5c: Generate chosen dashboard(s)
-- [pending] 5d: Deploy dashboard (if chosen)
-- [pending] 5e: Review report quality
-```
-
-**5a: Report + Data (always, in parallel)**
-
-First, create the output directory:
-```bash
-mkdir -p output/YYYY-MM-DD-{topic-slug}/
-```
-
-Then dispatch two agents simultaneously with this context:
+Dispatch two subagents simultaneously:
 
 **Metadata to pass to BOTH agents:**
 - `topic`: research topic (string)
@@ -266,16 +286,18 @@ Then dispatch two agents simultaneously with this context:
 - `analysis`: {leaders, patterns, anomalies, market_context} from Phase 4
 - `confidence_map`: list of {source, level, reason} objects
 
-**Agents:**
+**Agents (MUST use Agent tool, do NOT generate files directly):**
 - **report-writer** subagent → `{output_dir}/report.md` (see agents/report-writer.md)
 - **dashboard-generator** subagent → `{output_dir}/data.csv` + `{output_dir}/data.xlsx` (see agents/dashboard-generator.md)
 
 Use the report format from `references/report-format.md`.
 Use XLSX generation instructions from `references/xlsx-generator.md`.
 
-**5b: Dashboard Choice (MANDATORY — do NOT skip this step)**
+**GATE**: report.md + data.csv + data.xlsx all exist → proceed to 5b.
 
-Immediately after 5a completes, you MUST ask the user about dashboards. Do NOT present final results yet.
+**5b: Dashboard Choice (MANDATORY — do NOT skip)**
+
+Immediately after 5a completes, you MUST ask the user about dashboards. Do NOT present final results yet. Do NOT generate any dashboard before asking.
 
 Use AskUserQuestion:
 ```
@@ -288,14 +310,18 @@ Use AskUserQuestion:
 
 If user chooses "Без дашборда", skip 5c and 5d and go directly to 5e.
 
-**5c: Generate chosen dashboard(s)**
+**GATE**: user answered → proceed to 5c (or 5e if "Без дашборда").
+
+**5c: Generate chosen dashboard(s) — use subagent**
 
 Based on user choice, dispatch dashboard-generator subagent(s):
 - Streamlit → dashboard.py + Dockerfile + docker-compose.yml + nginx.conf + requirements.txt
-- HTML → dashboard.html (self-contained with embedded data)
+- HTML → dashboard.html (self-contained with embedded data, interactive: filters, search, sorting)
 - Both → two agents in parallel
 
 Use dashboard templates from `references/dashboard-template.md`.
+
+**GATE**: chosen dashboard files exist → proceed to 5d.
 
 **5d: Deploy Onboarding (MANDATORY if dashboard was generated — do NOT skip)**
 
@@ -323,7 +349,9 @@ Immediately after 5c, you MUST deploy the dashboard. Do NOT just show files and 
 
 **If BOTH dashboards were chosen:** deploy both sequentially (VPS first, then GitHub Pages).
 
-**5e: Report Review**
+**GATE**: dashboard deployed (or user explicitly declined) → proceed to 5e.
+
+**5e: Report Review (MANDATORY)**
 
 Dispatch **report-reviewer** subagent (see agents/report-reviewer.md):
 - Check all sections present
@@ -331,16 +359,27 @@ Dispatch **report-reviewer** subagent (see agents/report-reviewer.md):
 - Insights are specific, not generic
 - If Issues Found → fix and re-dispatch (max 3 iterations)
 
-### Phase 6: Verification Before Completion
+**GATE**: report-reviewer returned Approved → proceed to Phase 6.
+
+### Phase 6: Verification Before Completion (MANDATORY — NEVER skip)
+
+**You CANNOT present final results before this phase is complete.**
 
 **Evidence over claims** — verify every output:
 
 - [ ] report.md exists and is not empty
 - [ ] data.csv parses without errors: `python -c "import csv; r=csv.reader(open('data.csv')); print(f'{sum(1 for _ in r)-1} rows')"`
 - [ ] data.xlsx is valid: `python -c "import openpyxl; wb=openpyxl.load_workbook('data.xlsx'); print(f'{wb.sheetnames}')"`
-- [ ] dashboard.py syntax check: `python -c "import ast; ast.parse(open('dashboard.py').read()); print('OK')"`
-- [ ] requirements.txt has all dependencies
-- [ ] docker-compose.yml is valid YAML
+- [ ] If Streamlit: dashboard.py syntax check: `python -c "import ast; ast.parse(open('dashboard.py').read()); print('OK')"`
+- [ ] If HTML: dashboard.html exists and is non-empty
+- [ ] If deployed: URL returns 200 OK
+
+**Verify Phase 5 completion gate**: Before presenting results, confirm:
+- [ ] 5b was asked (dashboard choice)
+- [ ] 5d was executed (deploy) or explicitly skipped by user
+- [ ] 5e was executed (report review returned Approved)
+
+If ANY of the above are missing — go back and complete them. Do NOT present results with incomplete phases.
 
 **Show evidence to user**: first 3 rows of table + file list with sizes.
 
@@ -353,10 +392,9 @@ Dispatch **report-reviewer** subagent (see agents/report-reviewer.md):
 📁 Файлы:
   - report.md (аналитический отчёт)
   - data.csv / data.xlsx (данные)
-  - dashboard.py (Streamlit-дашборд)
+  - dashboard.py / dashboard.html (дашборд)
 
-🚀 Запуск дашборда: streamlit run output/YYYY-MM-DD-topic/dashboard.py
-🌐 Дашборд задеплоен: [URL if deployed]
+🚀 Дашборд задеплоен: [URL]
 ```
 
 ## Scraping Error Handling (Root Cause Approach)
@@ -366,8 +404,9 @@ When a source is unavailable, do NOT just try another source. Systematically dia
 1. **Diagnose**: HTTP code? Timeout? Block? Empty response?
 2. **Root cause**: robots.txt? Rate limit? JS-only? Geo-block? Auth required?
 3. **Fix by cause**:
+   - HTTP 404 → verify URL, try `firecrawl map` on domain, find alternative
    - Rate limit → increase pause, retry
-   - JS-only → Firecrawl with JS rendering
+   - JS-only → Firecrawl with `--wait-for 3000`
    - Geo-block → alternative source
    - Auth required → skip, note N/A
 4. **Report to user** about problematic sources and decisions made
