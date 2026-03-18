@@ -71,7 +71,9 @@ Write `{output_dir}/_state/normalized.json`:
 }
 ```
 
-Update `.superscrape-session.json` — add 4 to completed_phases.
+## Update Session
+
+Update `.superscrape-session.json`: set `current_phase` to `"phase-5a"`, add `"phase-4"` to `completed_phases`.
 
 ## Done
 

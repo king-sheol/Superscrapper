@@ -40,7 +40,9 @@ test -f {output_dir}/report.md && test -f {output_dir}/data.csv && test -f {outp
 
 All three files must exist and be non-empty.
 
-Update `.superscrape-session.json` — add "5a" to completed_phases.
+## Update Session
+
+Update `.superscrape-session.json`: set `current_phase` to `"phase-5b"`, add `"phase-5a"` to `completed_phases`.
 
 ## Done
 

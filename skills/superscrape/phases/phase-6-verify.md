@@ -56,9 +56,9 @@ Show:
 
 Present the completion summary with: topic, total records, number of sources, file list, and deploy URL if applicable.
 
-### 5. Clean Up Session
+## Update Session
 
-Delete the session file:
+**DELETE** `.superscrape-session.json` — only incomplete sessions should persist on disk:
 ```bash
 rm {output_dir}/.superscrape-session.json
 ```

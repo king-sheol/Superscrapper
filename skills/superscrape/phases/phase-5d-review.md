@@ -29,7 +29,9 @@ Dispatch **report-reviewer** subagent. The reviewer checks:
 
 Phase 5d is NOT complete until report-reviewer returns **VERDICT: Approved**.
 
-Update `.superscrape-session.json` — add "5d" to completed_phases.
+## Update Session
+
+Update `.superscrape-session.json`: set `current_phase` to `"phase-5e"`, add `"phase-5d"` to `completed_phases`.
 
 ## Done
 

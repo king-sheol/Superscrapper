@@ -58,7 +58,9 @@ No deployment needed. Mark phase complete and proceed.
 
 Deploy both sequentially: VPS first, then GitHub Pages.
 
-Update `.superscrape-session.json` — add "5e" to completed_phases.
+## Update Session
+
+Update `.superscrape-session.json`: set `current_phase` to `"phase-6"`, add `"phase-5e"` to `completed_phases`.
 
 ## Done
 

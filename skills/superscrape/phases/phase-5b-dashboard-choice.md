@@ -25,7 +25,9 @@ Save `{output_dir}/_state/dashboard_choice.json`:
 {"choice": "streamlit" | "html" | "both" | "none"}
 ```
 
-Update `.superscrape-session.json` — add "5b" to completed_phases.
+## Update Session
+
+Update `.superscrape-session.json`: set `current_phase` to `"phase-5c"`, add `"phase-5b"` to `completed_phases`.
 
 ## Done
 

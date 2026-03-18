@@ -36,7 +36,9 @@ Run both subagents in parallel.
 
 After generation, show the user a description of what was generated (file list, key features, size).
 
-Update `.superscrape-session.json` — add "5c" to completed_phases.
+## Update Session
+
+Update `.superscrape-session.json`: set `current_phase` to `"phase-5d"`, add `"phase-5c"` to `completed_phases`.
 
 ## Done
 

@@ -63,7 +63,9 @@ Wait for user confirmation.
 
 ### 7. Save State
 
-Update `.superscrape-session.json` — add 3 to completed_phases.
+## Update Session
+
+Update `.superscrape-session.json`: set `current_phase` to `"phase-4"`, add `"phase-3"` to `completed_phases`.
 
 ## Done
 
