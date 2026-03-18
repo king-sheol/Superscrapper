@@ -24,7 +24,9 @@ Apply validation layers sequentially:
 
 **Layer 3 — Ranges**: Check that numbers fall within reasonable bounds. Flag dates outside expected range. Mark out-of-range values for review.
 
-**Layer 4 — Cross-check**: Compare data from different sources. If 3+ sources report the same field with >30% discrepancy, flag for manual review. Note which source values are most likely correct.
+**Layer 4 — Cross-check**: Compare data from different sources. If the same entity appears in 3+ sources with >30% divergence on a numeric field, flag with `"conflicting_data": true` and list the divergent values per source. Note which source values are most likely correct.
+
+**Layer 5 — Dead project detection**: For each entity, check if the source URL returned HTTP 404 during collection or if the latest activity date is >6 months old. If so, flag with `"possibly_dead": true` and add reason ("site 404" or "last activity >6mo").
 
 ### 3. Fill Gaps
 
@@ -38,7 +40,11 @@ Dispatch **data-quality-reviewer** subagent. The reviewer checks:
 - Anomalies (statistical outliers)
 - Returns VERDICT: Approved or Issues Found
 
-**If Issues Found**: Fix the flagged issues and re-dispatch the reviewer. Maximum 3 iterations. Phase 4 is NOT complete until the reviewer returns **VERDICT: Approved**.
+**If Issues Found**: Fix the flagged issues and re-dispatch the reviewer. Maximum 3 iterations.
+
+**After 3 failed reviews**: If the reviewer still returns "Issues Found" after 3 iterations, use AskUserQuestion: "Quality review failed 3 times. Accept current data quality and proceed, or abort?" If user accepts, set `quality_review` to `"Accepted-with-issues"` and proceed. If abort, stop the pipeline.
+
+Phase 4 is NOT complete until the reviewer returns **VERDICT: Approved** or user explicitly accepts.
 
 ### 5. Analyze
 
@@ -58,6 +64,10 @@ Write `{output_dir}/_state/normalized.json`:
   "columns": ["..."],
   "column_types": {"Name": "string", "Price": "number", ...},
   "records": [...],
+  "flags": {
+    "conflicting_data": ["entity names with >30% divergence across 3+ sources"],
+    "possibly_dead": ["entity names where source 404 or last activity >6mo"]
+  },
   "analysis": {
     "leaders": [...],
     "patterns": [...],
