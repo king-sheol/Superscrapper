@@ -28,6 +28,24 @@ If npm not found, tell the user to install Node.js first. Re-run `firecrawl --st
 
 **"Authenticated"** — ready. Note the credits balance and concurrency limits from the output.
 
+### 1b. Save Initial Credit Count
+
+After successful authentication, parse the credits from `firecrawl --status` output and save:
+
+```bash
+mkdir -p {output_dir}/_state 2>/dev/null || true
+firecrawl --status 2>&1 | python -c "
+import sys, json, re
+text = sys.stdin.read()
+m = re.search(r'(\d+)\s*credits', text, re.IGNORECASE)
+credits = int(m.group(1)) if m else 0
+json.dump({'initial_credits': credits}, open('{output_dir}/_state/credits.json', 'w'))
+print(f'Saved {credits} credits')
+"
+```
+
+**Note**: If output_dir is not yet known (topic not decided), save credits.json to a temp location and move it in Phase 1. Alternatively, store the credit count in memory and write the file when creating `_state/` in Phase 1.
+
 ### 2. Check Python
 
 ```bash

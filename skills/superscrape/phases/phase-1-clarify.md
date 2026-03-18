@@ -56,11 +56,17 @@ Write `{output_dir}/_state/config.json`:
 Write `{output_dir}/.superscrape-session.json`:
 ```json
 {
-  "created": "YYYY-MM-DD",
-  "topic": "...",
-  "completed_phases": [0, 1]
+  "version": 3,
+  "output_dir": "{output_dir}",
+  "topic": "{topic}",
+  "language": "{detected_language}",
+  "current_phase": "phase-1",
+  "completed_phases": ["phase-0", "phase-1"],
+  "created_at": "{ISO timestamp}"
 }
 ```
+
+Also: if credits.json was saved to a temp location in Phase 0, move it to `{output_dir}/_state/credits.json` now.
 
 ## Done
 
