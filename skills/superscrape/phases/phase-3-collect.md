@@ -12,7 +12,11 @@ If GATE FAIL — go back to Phase 2.
 
 ### 1. Plan Credit Budget
 
-Calculate credit budget per source based on total available credits and number of sources. Prefer APIs over scraping when available.
+Read `{output_dir}/_state/credits.json` to get `initial_credits`. Read `{output_dir}/_state/sources.json` to count approved sources.
+
+Calculate per-source budget: `floor(initial_credits / number_of_sources)`.
+
+Include this budget in each scraper subagent prompt: "You have N credits for this source. Do not exceed this budget." Prefer APIs over scraping when available (APIs cost 0 credits).
 
 ### 2. Dispatch Scraper Subagents
 
@@ -28,7 +32,7 @@ Dispatch one **scraper** subagent per approved source (max 5 parallel). Each age
 After EACH scraper agent returns:
 1. Parse the JSON data block from the agent's response
 2. Immediately save to `{output_dir}/_state/raw_data_{source_slug}.json`
-3. Report progress in chat: "N/M sources collected"
+3. Message the user: **"N/M sources collected"** (e.g. "2/5 sources collected")
 
 Do NOT wait for all agents to finish before saving. Each agent's data is saved individually.
 
@@ -36,8 +40,9 @@ Do NOT wait for all agents to finish before saving. Each agent's data is saved i
 
 If a rate limit is hit mid-collection:
 1. Save all data collected so far (individual raw_data files)
-2. Tell the user which sources succeeded and which remain
-3. Wait or ask user how to proceed
+2. Message: **"Rate limit reached, data saved. Say 'continue' when ready."**
+3. Tell the user which sources succeeded and which remain
+4. Wait for user to say "continue" before retrying remaining sources
 
 ### 5. Error Handling (Root Cause)
 
