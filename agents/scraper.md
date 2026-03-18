@@ -85,8 +85,10 @@ Return a structured result:
 
 ## Rules
 
+- **NEVER use browser automation tools** (Claude_in_Chrome, WebFetch, WebSearch, read_page, computer, navigate, etc.). ALL web access goes through Firecrawl CLI via Bash ONLY. Browser tools cause silent freezes.
 - Extract ONLY the requested columns — do not add extra data
 - If a field is not available, use "N/A" with a note why
 - Always include Source URL and Collection Date for every row
 - Do NOT modify or interpret the data — extract as-is
 - Report partial results if some pages worked but others failed
+- Respond in the same language as the user's original request

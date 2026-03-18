@@ -18,6 +18,10 @@ Collect, normalize, and analyze data from multiple web sources. Produce structur
 
 2. **Firecrawl is a CLI tool, NOT an MCP tool**: Do NOT use ToolSearch to find Firecrawl tools. Do NOT look for MCP tools. Firecrawl is invoked ONLY via `Bash` tool with CLI commands like `firecrawl search`, `firecrawl scrape`, etc. See the CLI Reference table below.
 
+3. **NEVER use browser automation**: Do NOT use Claude_in_Chrome, WebFetch, WebSearch, or any browser/MCP browsing tools for data collection. ALL web access must go through Firecrawl CLI. Browser tools cause silent freezes and are unreliable for scraping. The ONLY exception is `gh` CLI for GitHub operations in Phase 5d.
+
+4. **NEVER skip deploy onboarding (Phase 5d)**: After generating a dashboard, you MUST ask the user where to deploy it and execute the deployment. Do NOT just show files and stop.
+
 ## Phase 0: Firecrawl Onboarding (auto, before any work)
 
 Before starting the workflow, **always** run this check:
@@ -260,19 +264,31 @@ Based on user choice, dispatch dashboard-generator subagent(s):
 
 Use dashboard templates from `references/dashboard-template.md`.
 
-**5d: Deploy Onboarding (if dashboard chosen)**
+**5d: Deploy Onboarding (MANDATORY if dashboard was generated — do NOT skip)**
 
-The plugin does deployment itself where possible, asking only for information it cannot determine:
+Immediately after 5c, you MUST deploy the dashboard. Do NOT just show files and stop. The plugin does deployment itself, asking only for information it cannot determine.
 
 **For Streamlit on VPS:**
-1. AskUserQuestion: server IP/hostname, SSH user, Docker status, domain (optional)
+1. AskUserQuestion: "Куда деплоить Streamlit-дашборд?"
+   - IP/hostname сервера
+   - SSH пользователь
+   - Есть ли Docker на сервере? (Да / Нет / Не знаю)
+   - Домен для дашборда (опционально)
 2. Execute via Bash: scp files → ssh docker compose up → configure nginx → verify curl
-3. Fallback if no SSH access: generate deploy.sh script + instructions
+3. Verify: curl the dashboard URL → must return 200 OK
+4. Fallback if no SSH access: generate deploy.sh script + instructions
 
 **For HTML on GitHub Pages:**
-1. AskUserQuestion: new or existing repo, repo name, public/private
-2. Execute via Bash: gh repo create → git init/add/commit/push → enable Pages → verify
-3. Fallback if gh CLI not authorized: suggest gh auth login or manual instructions
+1. AskUserQuestion: "Куда деплоить HTML-дашборд?"
+   - Создать новый репозиторий или использовать существующий?
+   - Имя репо (предложить: dashboard-{topic-slug})
+   - Public или Private?
+2. Execute via Bash: `gh repo create` → copy dashboard.html as index.html → git init/add/commit/push → enable Pages via `gh api`
+3. Wait for build: poll `gh api repos/{owner}/{repo}/pages/builds` until status is "built"
+4. Verify: show the live URL to the user
+5. Fallback if gh CLI not authorized: suggest `gh auth login` or manual instructions
+
+**If BOTH dashboards were chosen:** deploy both sequentially (VPS first, then GitHub Pages).
 
 **5e: Report Review**
 
