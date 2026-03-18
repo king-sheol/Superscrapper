@@ -12,7 +12,7 @@ auto-detection logic, and visual design tokens. Does NOT contain implementation 
 
 | Data Type | KPI Cards | Primary Chart | Comparison Chart | Table |
 |-----------|-----------|---------------|------------------|-------|
-| Rating / comparison | Top-1, avg score, total, sources | ECharts horizontal bar (gradient) | ECharts radar (top 5) | AG Grid: sort by rating |
+| Rating / comparison | Top-1, avg score, total, sources | ECharts horizontal bar (gradient) | ECharts radar (top 3) | AG Grid: sort by rating |
 | Prices | Min / max / median, best value | ECharts scatter | ECharts boxplot | AG Grid: conditional coloring |
 | Time series | Latest, trend %, min / max | ECharts line (area fill) | ECharts heatmap | AG Grid (plain values) |
 | Segment | Leader share, count, total | ECharts treemap / sunburst | ECharts stacked bar | AG Grid: group by segment |
@@ -119,6 +119,53 @@ Size scale:
 - KPI label: 0.75rem, uppercase, letter-spacing 0.05em
 - Body / table: 0.875rem
 - Small / caption: 0.75rem
+
+---
+
+## Design Rules (MANDATORY)
+
+These rules prevent known visual bugs. The dashboard-generator MUST apply all of them.
+
+### Data Handling
+- ALWAYS strip BOM from CSV: clean `\uFEFF` from all column names after loading
+- ALWAYS set tooltip `extraCssText: 'max-width: 400px; white-space: normal; word-wrap: break-word;'`
+- Limit text in tooltips to 100 chars + "..." for long fields (functions, integrations)
+
+### Cyrillic/Russian Text
+- Radar chart axis labels: max 10 chars. Use abbreviations: "RU" not "Русский язык", "Free" not "Бесплатный тариф"
+- Sidebar filter labels: max 15 chars. "Бесплатный" not "Бесплатный тариф"
+- AG Grid headers: use short names. "Бесплатный" not "Бесплатный тариф", "Аудитория" not "Целевая аудитория", "Мобильное" not "Мобильное приложение"
+- Table: hide columns with long text (Ключевые функции, Интеграции) — show in detail panel instead
+
+### Charts
+- Radar chart: max 3 items (not 5). 5 overlapping areas are unreadable
+- Radar radius: 70%, line width: 2.5, area opacity: 0.25
+- Bar chart: ALWAYS use LinearGradient (dark→bright), borderRadius [0,6,6,0], animationDuration 1500
+- Bar chart animationDelay: `idx * 50` for stagger effect
+
+### Table (AG Grid)
+- Set minWidth per column: name=200, price=180, rating=90
+- domLayout: 'normal' with fixed height container (600px)
+- Scroll: add `.ag-body-viewport { overflow-y: auto !important }` to prevent page scroll hijack
+
+### Badges
+- Semantic colors: Да=#059669 (green), Нет=#dc2626 (red), Триал/Частично=#d97706 (amber)
+- All badges: white text, pill shape (border-radius: 9999px), font-size: 11px, padding: 2px 8px
+
+### Layout
+- KPI cards: glassmorphism (backdrop-filter: blur(12px), rgba background, subtle border, hover glow+lift)
+- Sidebar: border-right separator, slightly different background from main
+- Section headers: font-weight 600, NOT uppercase
+- Export button: ghost style (transparent bg, subtle border), not primary CTA
+- No branding/logo block in sidebar — title goes in main header only
+- Add favicon: inline SVG emoji
+
+### Streamlit-specific
+- BOM strip: `df.columns = [c.replace('\ufeff', '') for c in df.columns]`
+- KPI delta: use `delta_color="off"` for non-trend deltas
+- Multiselect: default=all options (so "Choose options" never shows)
+- Add detail expander below table for selected row (shows hidden columns)
+- Add horizontal rules between sections
 
 ---
 

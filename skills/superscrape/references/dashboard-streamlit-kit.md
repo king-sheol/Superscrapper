@@ -64,6 +64,8 @@ DARK_BG = "#1e293b"
 @st.cache_data
 def load_data():
     df = pd.read_csv("data.csv")
+    # BOM fix — strip \uFEFF from column names
+    df.columns = [c.replace('\ufeff', '') for c in df.columns]
     return df
 
 df = load_data()
@@ -97,7 +99,7 @@ def render_kpis(data: pd.DataFrame):
     cols = st.columns(min(4, 1 + len(numeric_cols)))
 
     # Always show total records
-    cols[0].metric("Total Records", len(data), delta=f"of {len(df)}")
+    cols[0].metric("Total Records", len(data), delta=f"of {len(df)}", delta_color="off")
 
     for idx, col_name in enumerate(numeric_cols[:3]):
         values = pd.to_numeric(data[col_name], errors="coerce").dropna()
@@ -107,11 +109,11 @@ def render_kpis(data: pd.DataFrame):
         vmin, vmax = values.min(), values.max()
 
         if idx == 0:
-            cols[1].metric(f"Avg {col_name}", f"{avg:.1f}", delta=f"min {vmin:.1f} / max {vmax:.1f}")
+            cols[1].metric(f"Avg {col_name}", f"{avg:.1f}", delta=f"min {vmin:.1f} / max {vmax:.1f}", delta_color="off")
         elif idx == 1:
-            cols[2].metric(f"Max {col_name}", f"{vmax:.1f}", delta=f"avg {avg:.1f}")
+            cols[2].metric(f"Max {col_name}", f"{vmax:.1f}", delta=f"avg {avg:.1f}", delta_color="off")
         elif idx == 2:
-            cols[3].metric(f"Min {col_name}", f"{vmin:.1f}", delta=f"avg {avg:.1f}")
+            cols[3].metric(f"Min {col_name}", f"{vmin:.1f}", delta=f"avg {avg:.1f}", delta_color="off")
 ```
 
 ---
@@ -132,8 +134,11 @@ def render_sidebar(data: pd.DataFrame) -> pd.DataFrame:
 
     for col_name in categorical_cols:
         unique_vals = sorted(data[col_name].dropna().unique().tolist())
-        selected = st.sidebar.multiselect(col_name, unique_vals, default=[])
-        if selected:
+        # Short label for sidebar (max 15 chars)
+        label = col_name[:15] if len(col_name) > 15 else col_name
+        # Default=all so "Choose options" placeholder never shows
+        selected = st.sidebar.multiselect(label, unique_vals, default=unique_vals)
+        if selected and len(selected) < len(unique_vals):
             data = data[data[col_name].isin(selected)]
 
     return data
@@ -190,11 +195,11 @@ def chart_horizontal_bar(data: pd.DataFrame, name_col: str, value_col: str):
                         "type": "linear",
                         "x": 0, "y": 0, "x2": 1, "y2": 0,
                         "colorStops": [
-                            {"offset": 0, "color": "#60a5fa88"},
+                            {"offset": 0, "color": "#3b82f6"},
                             {"offset": 1, "color": "#60a5fa"},
                         ],
                     },
-                    "borderRadius": [0, 4, 4, 0],
+                    "borderRadius": [0, 6, 6, 0],
                 },
                 "emphasis": {"itemStyle": {"color": "#93c5fd"}},
                 "barMaxWidth": 30,
@@ -208,20 +213,25 @@ def chart_horizontal_bar(data: pd.DataFrame, name_col: str, value_col: str):
 
 ```python
 def chart_radar(data: pd.DataFrame, name_col: str, numeric_cols_list: list):
-    top5 = data.nlargest(5, numeric_cols_list[0])
+    # Top 3 only (not 5 — overlapping areas are unreadable)
+    top3 = data.nlargest(3, numeric_cols_list[0])
+
+    # Short label mapping for Cyrillic/long text (max 10 chars)
+    def short_label(text: str) -> str:
+        return text[:10] if len(text) > 10 else text
 
     indicator = []
     for col in numeric_cols_list:
         max_val = pd.to_numeric(data[col], errors="coerce").max()
-        indicator.append({"name": col, "max": float(max_val * 1.1) if max_val else 100})
+        indicator.append({"name": short_label(col), "max": float(max_val * 1.1) if max_val else 100})
 
     series_data = []
-    for idx, (_, row) in enumerate(top5.iterrows()):
+    for idx, (_, row) in enumerate(top3.iterrows()):
         series_data.append({
             "value": [float(row[c]) if pd.notna(row[c]) else 0 for c in numeric_cols_list],
             "name": str(row[name_col]),
-            "lineStyle": {"color": CHART_COLORS[idx % len(CHART_COLORS)]},
-            "areaStyle": {"color": CHART_COLORS[idx % len(CHART_COLORS)], "opacity": 0.15},
+            "lineStyle": {"color": CHART_COLORS[idx % len(CHART_COLORS)], "width": 2.5},
+            "areaStyle": {"color": CHART_COLORS[idx % len(CHART_COLORS)], "opacity": 0.25},
             "itemStyle": {"color": CHART_COLORS[idx % len(CHART_COLORS)]},
         })
 
@@ -230,7 +240,7 @@ def chart_radar(data: pd.DataFrame, name_col: str, numeric_cols_list: list):
         "animationDuration": 1500,
         "animationEasing": "cubicOut",
         "legend": {
-            "data": top5[name_col].tolist(),
+            "data": top3[name_col].tolist(),
             "bottom": 0,
             "textStyle": {"color": "#94a3b8"},
         },
@@ -238,9 +248,11 @@ def chart_radar(data: pd.DataFrame, name_col: str, numeric_cols_list: list):
             "backgroundColor": DARK_BG,
             "borderColor": "#334155",
             "textStyle": {"color": "#f1f5f9"},
+            "extraCssText": "max-width: 400px; white-space: normal; word-wrap: break-word;",
         },
         "radar": {
             "indicator": indicator,
+            "radius": "70%",
             "shape": "polygon",
             "axisName": {"color": "#94a3b8", "fontSize": 11},
             "splitLine": {"lineStyle": {"color": "#334155"}},
@@ -510,34 +522,52 @@ def chart_treemap(data: pd.DataFrame, category_col: str, value_col: str):
 
 ```python
 def render_table(data: pd.DataFrame):
-    gb = GridOptionsBuilder.from_dataframe(data)
+    # Hide long-text columns from table (show in detail panel)
+    HIDDEN_COLS = ["Ключевые функции", "Интеграции", "key_features", "integrations"]
+    visible_cols = [c for c in data.columns if c not in HIDDEN_COLS]
+    display_df = data[visible_cols]
+
+    gb = GridOptionsBuilder.from_dataframe(display_df)
     gb.configure_default_column(
         filterable=True, sortable=True, resizable=True, min_column_width=80
     )
     gb.configure_selection(selection_mode="single", use_checkbox=False)
     gb.configure_pagination(paginationAutoPageSize=False, paginationPageSize=50)
 
+    # Column-specific minWidth (design rules)
+    MIN_WIDTH_MAP = {"name": 200, "price": 180, "rating": 90}
+    for col in visible_cols:
+        if col == name_col:
+            gb.configure_column(col, min_column_width=200)
+        elif col.lower() in MIN_WIDTH_MAP:
+            gb.configure_column(col, min_column_width=MIN_WIDTH_MAP[col.lower()])
+
     for col in numeric_cols:
-        gb.configure_column(col, type=["numericColumn"], precision=2)
+        if col in visible_cols:
+            gb.configure_column(col, type=["numericColumn"], precision=2)
 
     grid_options = gb.build()
 
     grid_response = AgGrid(
-        data,
+        display_df,
         gridOptions=grid_options,
         theme="alpine-dark",
         update_mode=GridUpdateMode.SELECTION_CHANGED,
-        height=500,
+        height=600,
         fit_columns_on_grid_load=True,
     )
 
-    # Detail expander for selected row
+    # Detail expander for selected row (shows ALL columns including hidden)
     selected = grid_response.get("selected_rows", None)
     if selected is not None and len(selected) > 0:
-        row = selected.iloc[0] if hasattr(selected, "iloc") else selected[0]
-        with st.expander(f"Details: {row.get(name_col, 'Selected Row')}", expanded=True):
-            for key, value in row.items():
-                st.markdown(f"**{key}:** {value}")
+        row_display = selected.iloc[0] if hasattr(selected, "iloc") else selected[0]
+        row_name = row_display.get(name_col, "Selected Row")
+        # Find full row from original data
+        full_row = data[data[name_col] == row_name].iloc[0] if row_name in data[name_col].values else row_display
+        with st.expander(f"Details: {row_name}", expanded=True):
+            for key, value in full_row.items():
+                val_str = str(value) if pd.notna(value) else "—"
+                st.markdown(f"**{key}:** {val_str}")
 ```
 
 ---
@@ -580,15 +610,21 @@ filtered_df = render_sidebar(df)
 # ── KPI Cards ────────────────────────────────────────────────
 render_kpis(filtered_df)
 
+st.divider()
+
 # ── Primary Chart ────────────────────────────────────────────
 st.subheader("Overview")
 # Call the chosen primary chart function, e.g.:
 # chart_horizontal_bar(filtered_df, name_col, numeric_cols[0])
 
+st.divider()
+
 # ── Comparison Chart ─────────────────────────────────────────
 st.subheader("Comparison")
 # Call the chosen comparison chart function, e.g.:
 # chart_radar(filtered_df, name_col, numeric_cols)
+
+st.divider()
 
 # ── Data Table ───────────────────────────────────────────────
 st.subheader("Data")

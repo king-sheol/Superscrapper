@@ -85,6 +85,13 @@ All files written to the output directory. Report what was generated:
 
 ## Rules
 
+- MUST read and follow "Design Rules (MANDATORY)" section in dashboard-template.md
+- MUST strip BOM from CSV data before embedding: clean `\uFEFF` from all column names
+- Radar chart: max 3 items, short axis labels (max 10 chars), radius 70%, line width 2.5, area opacity 0.25
+- AG Grid: set minWidth per column (name=200, price=180, rating=90), hide long-text columns (show in detail panel)
+- Badge colors: green=#059669 (Да), red=#dc2626 (Нет), amber=#d97706 (Триал/Частично)
+- KPI cards: glassmorphism style (backdrop-filter blur, rgba background, hover glow+lift)
+- Tooltips: extraCssText with max-width 400px, word-wrap; truncate long text to 100 chars
 - All ECharts use dark theme base #0f172a and palette from dashboard-template.md. HTML uses ECharts + AG Grid + Tailwind (CDN). Streamlit uses streamlit-echarts + streamlit-aggrid. ECharts configs are structurally identical between HTML and Streamlit.
 - HTML dashboard must work offline (except ECharts, AG Grid, Tailwind, Lucide CDNs)
 - Data in HTML is embedded, not loaded from external file

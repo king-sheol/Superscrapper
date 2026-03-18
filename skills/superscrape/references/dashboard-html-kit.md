@@ -65,6 +65,25 @@ All snippets below are COMPLETE and WORKING. The agent copies them into a single
             --ag-foreground-color: #f1f5f9;
             --ag-secondary-foreground-color: #94a3b8;
         }
+        /* Glassmorphism KPI cards */
+        .glass-card {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(96, 165, 250, 0.15);
+            transition: all 0.3s ease;
+        }
+        .glass-card:hover {
+            border-color: rgba(96, 165, 250, 0.4);
+            box-shadow: 0 0 20px rgba(96, 165, 250, 0.1);
+            transform: translateY(-2px);
+        }
+        /* AG Grid scroll fix */
+        .ag-body-viewport { overflow-y: auto !important; }
+        /* Badge constants */
+        .badge-yes { background: #059669; color: #fff; border-radius: 9999px; font-size: 11px; padding: 2px 8px; }
+        .badge-no { background: #dc2626; color: #fff; border-radius: 9999px; font-size: 11px; padding: 2px 8px; }
+        .badge-partial { background: #d97706; color: #fff; border-radius: 9999px; font-size: 11px; padding: 2px 8px; }
         /* Detail panel */
         #detail-panel {
             position: fixed;
@@ -112,7 +131,7 @@ All snippets below are COMPLETE and WORKING. The agent copies them into a single
     <div class="flex px-6 gap-6">
 
         <!-- Sidebar Filters -->
-        <aside id="filter-sidebar" class="w-64 flex-shrink-0 space-y-4">
+        <aside id="filter-sidebar" class="w-64 flex-shrink-0 space-y-4 pr-6 border-r border-border">
             <div>
                 <label class="block text-xs uppercase tracking-wider text-slate-400 mb-1">Search</label>
                 <input id="search-input" type="text" placeholder="Search all data..."
@@ -145,11 +164,11 @@ All snippets below are COMPLETE and WORKING. The agent copies them into a single
                 <div class="flex items-center justify-between mb-3">
                     <h2 class="text-lg font-semibold">Data</h2>
                     <button onclick="exportCsv()"
-                            class="flex items-center gap-1 px-3 py-1.5 bg-border rounded-lg text-sm text-slate-300 hover:bg-slate-600 transition">
+                            class="flex items-center gap-1 px-3 py-1.5 bg-transparent border border-border rounded-lg text-sm text-slate-300 hover:bg-surface transition">
                         <i data-lucide="download" class="w-4 h-4"></i> Export CSV
                     </button>
                 </div>
-                <div id="data-table" class="ag-theme-alpine-dark" style="height:500px;width:100%;"></div>
+                <div id="data-table" class="ag-theme-alpine-dark" style="height:600px;width:100%;"></div>
             </section>
         </main>
     </div>
@@ -237,7 +256,7 @@ function renderKPIs(data) {
     // Render cards with countUp animation
     kpis.forEach(function(kpi) {
         var card = document.createElement('div');
-        card.className = 'bg-surface rounded-xl border border-border p-4';
+        card.className = 'glass-card rounded-xl p-4';
         card.innerHTML =
             '<div class="flex items-center gap-2 mb-2">' +
                 '<i data-lucide="' + kpi.icon + '" class="w-4 h-4 text-slate-400"></i>' +
@@ -348,23 +367,26 @@ function chartHorizontalBar(containerId, data, nameCol, valueCol) {
             axisPointer: { type: 'shadow' },
             backgroundColor: '#1e293b',
             borderColor: '#334155',
-            textStyle: { color: '#f1f5f9' }
+            textStyle: { color: '#f1f5f9' },
+            extraCssText: 'max-width: 400px; white-space: normal; word-wrap: break-word;'
         },
         series: [{
             type: 'bar',
             data: values,
             itemStyle: {
                 color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
-                    { offset: 0, color: '#60a5fa' },
-                    { offset: 1, color: '#3b82f6' }
+                    { offset: 0, color: '#3b82f6' },
+                    { offset: 1, color: '#60a5fa' }
                 ]),
-                borderRadius: [0, 4, 4, 0]
+                borderRadius: [0, 6, 6, 0]
             },
             emphasis: {
                 itemStyle: { color: '#93c5fd' }
             },
-            barMaxWidth: 30
-        }]
+            barMaxWidth: 30,
+            animationDelay: function(idx) { return idx * 50; }
+        }],
+        animationDuration: 1500
     });
 
     chart.on('click', function(params) {
@@ -381,23 +403,29 @@ function chartRadar(containerId, data, nameCol, numericCols) {
     var chart = initChart(containerId);
     if (!chart) return;
 
-    // Take top 5 items (by first numeric column)
-    var top5 = data.slice().sort(function(a, b) {
+    // Take top 3 items (not 5 — overlapping areas are unreadable)
+    var top3 = data.slice().sort(function(a, b) {
         return parseFloat(b[numericCols[0]]) - parseFloat(a[numericCols[0]]);
-    }).slice(0, 5);
+    }).slice(0, 3);
+
+    // Short label mapping for Cyrillic/long text (max 10 chars)
+    function shortLabel(text) {
+        if (!text || text.length <= 10) return text;
+        return text.substring(0, 10);
+    }
 
     // Build indicator with max values
     var indicator = numericCols.map(function(col) {
         var maxVal = Math.max.apply(null, data.map(function(r) { return parseFloat(r[col]) || 0; }));
-        return { name: col, max: maxVal * 1.1 || 100 };
+        return { name: shortLabel(col), max: maxVal * 1.1 || 100 };
     });
 
-    var seriesData = top5.map(function(row, idx) {
+    var seriesData = top3.map(function(row, idx) {
         return {
             value: numericCols.map(function(col) { return parseFloat(row[col]) || 0; }),
             name: row[nameCol],
-            lineStyle: { color: CHART_COLORS[idx % CHART_COLORS.length] },
-            areaStyle: { color: CHART_COLORS[idx % CHART_COLORS.length], opacity: 0.15 },
+            lineStyle: { color: CHART_COLORS[idx % CHART_COLORS.length], width: 2.5 },
+            areaStyle: { color: CHART_COLORS[idx % CHART_COLORS.length], opacity: 0.25 },
             itemStyle: { color: CHART_COLORS[idx % CHART_COLORS.length] }
         };
     });
@@ -407,17 +435,19 @@ function chartRadar(containerId, data, nameCol, numericCols) {
         animationDuration: 1500,
         animationEasing: 'cubicOut',
         legend: {
-            data: top5.map(function(r) { return r[nameCol]; }),
+            data: top3.map(function(r) { return r[nameCol]; }),
             bottom: 0,
             textStyle: { color: '#94a3b8' }
         },
         tooltip: {
             backgroundColor: '#1e293b',
             borderColor: '#334155',
-            textStyle: { color: '#f1f5f9' }
+            textStyle: { color: '#f1f5f9' },
+            extraCssText: 'max-width: 400px; white-space: normal; word-wrap: break-word;'
         },
         radar: {
             indicator: indicator,
+            radius: '70%',
             shape: 'polygon',
             axisName: { color: '#94a3b8', fontSize: 11 },
             splitLine: { lineStyle: { color: '#334155' } },
@@ -766,20 +796,43 @@ function chartTreemap(containerId, data, categoryCol, valueCol) {
 function renderTable(data) {
     var columns = Object.keys(data[0] || {});
 
-    var columnDefs = columns.map(function(col) {
+    // Column minWidth map (design rules)
+    var MIN_WIDTH_MAP = { name: 200, price: 180, rating: 90 };
+    // Badge color map for Да/Нет/Триал values
+    var BADGE_MAP = {
+        'Да': 'badge-yes', 'да': 'badge-yes', 'Yes': 'badge-yes',
+        'Нет': 'badge-no', 'нет': 'badge-no', 'No': 'badge-no',
+        'Триал': 'badge-partial', 'триал': 'badge-partial', 'Частично': 'badge-partial', 'частично': 'badge-partial'
+    };
+    // Hide long-text columns (show in detail panel instead)
+    var HIDDEN_COLS = ['Ключевые функции', 'Интеграции', 'key_features', 'integrations'];
+
+    var columnDefs = columns.filter(function(col) {
+        return HIDDEN_COLS.indexOf(col) === -1;
+    }).map(function(col) {
         var isNumeric = COLUMNS.numeric.indexOf(col) !== -1;
+        var colLower = col.toLowerCase();
+        var minW = MIN_WIDTH_MAP[colLower] || (col === COLUMNS.name ? 200 : 100);
         return {
             headerName: col,
             field: col,
             sortable: true,
             filter: true,
             resizable: true,
-            minWidth: 100,
+            minWidth: minW,
             cellStyle: isNumeric ? { textAlign: 'right' } : null,
             valueFormatter: isNumeric ? function(params) {
                 var v = parseFloat(params.value);
                 return isNaN(v) ? params.value : v.toFixed(2);
-            } : null
+            } : null,
+            cellRenderer: function(params) {
+                var cls = BADGE_MAP[params.value];
+                if (cls) return '<span class="' + cls + '">' + params.value + '</span>';
+                // Truncate long text in cells
+                var text = String(params.value || '');
+                if (text.length > 100) return text.substring(0, 100) + '...';
+                return text;
+            }
         };
     });
 
