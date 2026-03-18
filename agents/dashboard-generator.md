@@ -45,13 +45,17 @@ For "dashboard-only" mode additionally:
 
 ### If mode = "dashboard-only":
 
-1. Read dashboard-template.md template
-2. Read data from {output_dir}/data.csv
-3. Determine visualization types using decision table from template
-4. Generate chosen dashboard(s):
-   - Streamlit → dashboard.py + requirements.txt + Dockerfile + docker-compose.yml + nginx.conf
+1. Read dashboard-template.md via `Read ${CLAUDE_PLUGIN_ROOT}/skills/superscrape/references/dashboard-template.md` → get decision table + color palette
+2. Read config.json from `{output_dir}/config.json` → get column types
+3. Read data from `{output_dir}/data.csv` → verify data types (dual detection: config.json metadata vs actual CSV values)
+4. Based on `dashboard_choice`:
+   - HTML → read `dashboard-html-kit.md` via `Read ${CLAUDE_PLUGIN_ROOT}/skills/superscrape/references/dashboard-html-kit.md`
+   - Streamlit → read `dashboard-streamlit-kit.md` via `Read ${CLAUDE_PLUGIN_ROOT}/skills/superscrape/references/dashboard-streamlit-kit.md`
+   - Both → read both kit files
+5. Assemble dashboard(s) using kit snippets + data:
+   - Streamlit → dashboard.py + requirements.txt + .streamlit/config.toml + Dockerfile + docker-compose.yml + nginx.conf
    - HTML → dashboard.html (self-contained, data embedded as JSON)
-5. Verify generated files
+6. Verify generated files
 
 ## Output
 
@@ -81,8 +85,8 @@ All files written to the output directory. Report what was generated:
 
 ## Rules
 
-- All Plotly charts use `plotly_dark` template and `Set2` color palette
-- HTML dashboard must work offline (except Plotly.js CDN)
+- All ECharts use dark theme base #0f172a and palette from dashboard-template.md. HTML uses ECharts + AG Grid + Tailwind (CDN). Streamlit uses streamlit-echarts + streamlit-aggrid. ECharts configs are structurally identical between HTML and Streamlit.
+- HTML dashboard must work offline (except ECharts, AG Grid, Tailwind, Lucide CDNs)
 - Data in HTML is embedded, not loaded from external file
 - Streamlit dashboard reads from data.csv (co-located)
 - Docker setup must be production-ready (healthcheck, restart policy)
