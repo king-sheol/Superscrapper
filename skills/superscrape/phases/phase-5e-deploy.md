@@ -12,26 +12,66 @@ No deployment needed. Mark phase complete and proceed.
 
 ### If choice = "streamlit" or "both" — Deploy to VPS
 
-1. **Ask for deployment info** via AskUserQuestion:
-   - IP/hostname of the server
-   - SSH user
-   - Is Docker installed? (Yes / No / Don't know)
-   - Domain for the dashboard (optional)
+#### VPS Deploy — SSH Onboarding (one-time)
 
-2. **Deploy**:
-   ```bash
-   scp -r {output_dir}/dashboard.py {output_dir}/Dockerfile {output_dir}/docker-compose.yml {output_dir}/nginx.conf {output_dir}/requirements.txt {output_dir}/data.csv user@host:/opt/dashboard/
-   ssh user@host "cd /opt/dashboard && docker compose up -d"
+Before first deploy, check SSH access:
+
+1. Check for existing SSH key:
+```bash
+test -f ~/.ssh/id_rsa.pub && echo "KEY EXISTS" || echo "NO KEY"
+```
+
+2. If NO KEY — generate one:
+```bash
+ssh-keygen -t rsa -b 4096 -N "" -f ~/.ssh/id_rsa
+```
+
+3. Check for saved server config:
+```bash
+cat ~/.superscrape-servers.json 2>/dev/null || echo "NO CONFIG"
+```
+
+4. If NO CONFIG — ask user for server details via AskUserQuestion:
+   - IP address
+   - SSH user (default: root)
+   - SSH port (default: 22)
+
+5. Test SSH key auth:
+```bash
+ssh -o BatchMode=yes -o ConnectTimeout=5 user@IP "echo ok" 2>/dev/null
+```
+
+6. If key auth fails — show user the public key and ask them to add it:
+   "Скопируй этот ключ на сервер. В терминале выполни:"
    ```
-
-3. **Configure nginx** if domain provided:
-   ```bash
-   ssh user@host "nginx -t && systemctl reload nginx"
+   ssh-copy-id user@IP
    ```
+   Или вручную добавь в ~/.ssh/authorized_keys на сервере.
 
-4. **Verify**: `curl -s -o /dev/null -w "%{http_code}" http://host:8501` — must return 200.
+7. After key is confirmed working, save config:
+```json
+// ~/.superscrape-servers.json
+{
+  "default": {
+    "ip": "46.149.79.21",
+    "user": "root",
+    "port": 22,
+    "app_dir": "/opt/streamlit-app",
+    "key_configured": true
+  }
+}
+```
 
-5. **Fallback** if no SSH access: generate `deploy.sh` script with all commands and provide instructions.
+#### VPS Deploy — Automatic (after onboarding)
+
+Once SSH key is configured, deploy is fully automatic:
+```bash
+scp -o BatchMode=yes dashboard.py data.csv requirements.txt user@IP:/opt/streamlit-app/
+ssh -o BatchMode=yes user@IP "cd /opt/streamlit-app && cp dashboard.py app.py && source venv/bin/activate && pip install -q streamlit-echarts streamlit-aggrid 2>/dev/null && systemctl restart streamlit"
+```
+
+Verify: `ssh -o BatchMode=yes user@IP "systemctl is-active streamlit"`
+If active — deploy success. Show URL: http://IP:8501
 
 ### If choice = "html" or "both" — Deploy to GitHub Pages
 

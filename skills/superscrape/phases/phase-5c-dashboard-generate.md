@@ -32,9 +32,20 @@ Dispatch **dashboard-generator** subagent (mode: dashboard-only, type: html):
 
 Run both subagents in parallel.
 
+### Visual Audit
+
+After dashboard-generator completes, dispatch the `dashboard-auditor` subagent:
+
+Prompt: "Audit the dashboard at {output_dir}/dashboard.html (and/or dashboard.py). Read the design system at ${CLAUDE_PLUGIN_ROOT}/skills/superscrape/references/design-system.md first. Output dir: {output_dir}"
+
+If VERDICT: Issues Found -- dashboard-auditor fixes them and re-audits (max 3 iterations).
+If VERDICT: Approved -- proceed to Phase 5d.
+
+This phase is NOT complete until dashboard-auditor returns Approved.
+
 ### Visual Preview
 
-After generation, show the user a description of what was generated (file list, key features, size).
+After audit is approved, show the user a description of what was generated (file list, key features, size).
 
 ## Update Session
 
