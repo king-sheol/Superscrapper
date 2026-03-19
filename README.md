@@ -72,7 +72,9 @@ Just write naturally:
 ├── agents/
 │   ├── scraper.md                — Collects data from one source
 │   ├── report-writer.md          — Generates analytical report
-│   ├── dashboard-generator.md    — Creates XLSX + dashboards
+│   ├── dashboard-designer.md     — Creates XLSX + dashboards (design-rules + assembly)
+│   ├── dashboard-art-director.md — Creative briefs for complex dashboards
+│   ├── dashboard-auditor.md      — Visual audit of generated dashboards
 │   ├── data-quality-reviewer.md  — Validates data quality
 │   └── report-reviewer.md        — Reviews report quality
 ├── commands/superscrape.md       — /superscrape entry point

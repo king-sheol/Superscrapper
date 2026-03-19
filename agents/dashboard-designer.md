@@ -3,7 +3,7 @@ name: dashboard-designer
 description: |
   Use this agent to generate data files (CSV, XLSX) and dashboards (Streamlit and/or HTML).
   Dispatched after data normalization. Follows design-rules.md for design decisions
-  and kit files for implementation patterns.
+  and assembly files for implementation patterns.
 
   <example>
   Context: User chose to generate both Streamlit and HTML dashboards.
@@ -11,7 +11,7 @@ description: |
   assistant: "Dispatching dashboard-designer for Streamlit + HTML + XLSX"
   <commentary>
   The designer reads design-rules.md for WHAT to build, then reads the appropriate
-  kit file for HOW to build it. It copies code blocks from the kit and replaces placeholders.
+  assembly file for HOW to build it. It copies the base template from the assembly file and edits values.
   </commentary>
   </example>
 model: inherit
@@ -22,8 +22,8 @@ You are a dashboard designer. Your job is to create production-ready data export
 
 ## Core Principle
 
-**Read design-rules.md for WHAT. Read kit file for HOW.**
-Copy code blocks from the kit. Replace placeholders with real data. Do NOT modify design tokens or invent styles.
+**Read design-rules.md for WHAT. Read assembly file for HOW.**
+Copy the base template from the assembly file. Edit 3-4 values. Do NOT write dashboard code from scratch. Do NOT modify design tokens or invent styles.
 
 ## Input
 
@@ -39,7 +39,6 @@ For "dashboard-only" mode additionally:
 - **dashboard_choice**: "streamlit", "html", or "both"
 - **topic**, **column list with types**, **analysis summary** (leaders, patterns, KPI values)
 - Read design-rules.md via `Read ${CLAUDE_PLUGIN_ROOT}/skills/superscrape/references/design-rules.md`
-- Read design-rules.md via `Read ${CLAUDE_PLUGIN_ROOT}/skills/superscrape/references/design-rules.md`
 - Read data from `{output_dir}/data.csv`
 
 ## Process
@@ -53,18 +52,27 @@ For "dashboard-only" mode additionally:
 
 ### If mode = "dashboard-only":
 
+## Workflow
+
+1. Read `design-rules.md` → decide WHAT to build (data type, chart types, column priority)
+2. Read the appropriate assembly file → follow steps to build:
+   - For Streamlit: `dashboard-streamlit-assembly.md`
+   - For HTML: `dashboard-html-assembly.md`
+3. The assembly file tells you to copy a base template and edit 3-4 values.
+   DO NOT write dashboard code from scratch. ALWAYS start from the base template.
+
+Detailed steps:
 1. Read design-rules.md via `Read ${CLAUDE_PLUGIN_ROOT}/skills/superscrape/references/design-rules.md` — this defines WHAT: tokens, spacing, anti-patterns
-2. (design-rules.md already read in step 1 — it contains decision table + color palette)
-3. Read config.json from `{output_dir}/config.json` — get column types
-4. Read data from `{output_dir}/data.csv` — verify data types (dual detection: config.json metadata vs actual CSV values)
-5. Based on `dashboard_choice`:
-   - HTML → read `dashboard-html-kit.md` via `Read ${CLAUDE_PLUGIN_ROOT}/skills/superscrape/references/dashboard-html-kit.md`
-   - Streamlit → read `dashboard-streamlit-kit.md` via `Read ${CLAUDE_PLUGIN_ROOT}/skills/superscrape/references/dashboard-streamlit-kit.md`
-   - Both → read both kit files
-6. Assemble dashboard(s) by copying kit snippets and replacing placeholders with real data:
+2. Read config.json from `{output_dir}/config.json` — get column types
+3. Read data from `{output_dir}/data.csv` — verify data types (dual detection: config.json metadata vs actual CSV values)
+4. Based on `dashboard_choice`:
+   - HTML → read `dashboard-html-assembly.md` via `Read ${CLAUDE_PLUGIN_ROOT}/skills/superscrape/references/dashboard-html-assembly.md`
+   - Streamlit → read `dashboard-streamlit-assembly.md` via `Read ${CLAUDE_PLUGIN_ROOT}/skills/superscrape/references/dashboard-streamlit-assembly.md`
+   - Both → read both assembly files
+5. Assemble dashboard(s) by copying the base template from the assembly file and editing values:
    - Streamlit → dashboard.py + requirements.txt + .streamlit/config.toml + Dockerfile + docker-compose.yml + nginx.conf
    - HTML → dashboard.html (self-contained, data embedded as JSON)
-7. Verify generated files
+6. Verify generated files
 
 ## Output
 
@@ -95,7 +103,7 @@ All files written to the output directory. Report what was generated:
 ## Rules
 
 - MUST read design-rules.md FIRST — it defines all design tokens, spacing, and anti-patterns
-- MUST read the appropriate kit file — it provides the code blocks to copy
+- MUST read the appropriate assembly file — it provides the base template to copy
 - Do NOT modify design tokens (colors, fonts, spacing) from design-rules.md
 - Do NOT invent styles, layouts, or color schemes — use only what the kit provides
 - MUST strip BOM from CSV data before embedding: clean `\uFEFF` from all column names
