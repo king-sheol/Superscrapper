@@ -8,85 +8,95 @@ description: >
   "покажи рейтинг", "проанализируй рынок". Do NOT trigger for simple web searches or single-page reads.
 ---
 
-# Superscrape — Orchestrator
+# Superscrape v4 — Orchestrator
 
 ## CRITICAL RULES
 
 | # | Rule |
 |---|------|
-| 1 | **Language**: ALWAYS respond in the user's CONVERSATION language, not the topic language. All output (plans, reports, questions, TodoWrite labels, dashboard UI) follows this rule. |
-| 2 | **Firecrawl = CLI only via Bash**. NEVER use ToolSearch to find Firecrawl tools. Commands: `firecrawl search`, `firecrawl scrape`, `firecrawl map`, `firecrawl crawl`, `firecrawl agent`. |
-| 3 | **BANNED tools**: Claude_in_Chrome, WebFetch, WebSearch, Chrome MCP, any browser/MCP browsing tool. Even on resume after rate limit. If Firecrawl credits exhausted, STOP and tell the user. |
-| 4 | **Phase 5b** (dashboard choice) and **5e** (deploy) are MANDATORY. Never skip them. Never show final results before all Phase 5 substeps complete. |
-| 5 | **Subagents REQUIRED**: scraper, report-writer, dashboard-generator, data-quality-reviewer, report-reviewer. Do NOT write reports or generate files directly in main context. |
-| 6 | **Save `_state/`** after EVERY phase. A phase is NOT complete until its state file is written. |
-| 7 | **NO final results** before Phase 6 verification completes. Evidence before assertions. |
+| 1 | Language = user's language |
+| 2 | Firecrawl = CLI only via Bash, never ToolSearch |
+| 3 | FORBIDDEN: browser tools, WebFetch, WebSearch, Chrome MCP |
+| 4 | Phase 5b (dashboard choice) and 5e (deploy) = MANDATORY |
+| 5 | Subagents REQUIRED: scraper, dashboard-designer, reviewers |
+| 6 | Save `_state/` after EVERY phase |
+| 7 | NO final results until Phase 6 |
 
 ## Resume Protocol
 
-On "продолжай" / "continue" / any resume:
-
-1. Search for `output/*/.superscrape-session.json`
-2. If multiple found — sort by `created_at`, show list via AskUserQuestion, let user pick which session
-3. If one found — check `version` field: if missing or < 3, it's a v2 session — ask user to start fresh or continue with limited compat
-4. If resumable — read `_state/` files to determine last completed phase, re-init TodoWrite from that point
-5. If not found or user chooses fresh — start from Phase 0
-
-## Firecrawl CLI Reference
-
-| Action | Command | Key flags |
-|--------|---------|-----------|
-| Search | `firecrawl search "query" -o file.json --json` | `--limit N`, `--scrape` |
-| Scrape | `firecrawl scrape URL -o file.md` | `--wait-for 3000`, `--only-main-content` |
-| Map | `firecrawl map URL --search "kw" -o urls.txt` | — |
-| Crawl | `firecrawl crawl URL --wait --limit N -o file.json` | `--max-depth`, `--include-paths` |
+1. Check `.superscrape-session.json` in CWD, then in `output/*/`
+2. If found: read `current_phase`, load corresponding phase file from `phases/`
+3. If not found: new session, start Phase 0
+4. If `version` field < 4: warn "Old session format (v{version}), recommend restart"
+5. If multiple sessions found: show list via AskUserQuestion, let user pick
 
 ## Phase Table
 
-| Phase | File | Gate condition |
-|-------|------|----------------|
-| 0 | `phases/phase-0-onboarding.md` | firecrawl authenticated + python 3.8+ + credits.json saved |
-| 1 | `phases/phase-1-clarify.md` | `_state/config.json` saved |
-| 2 | `phases/phase-2-discover.md` | `_state/sources.json` saved + user confirmed |
-| 3 | `phases/phase-3-collect.md` | `_state/raw_data_*.json` saved + user confirmed preview |
-| 4 | `phases/phase-4-normalize.md` | `_state/normalized.json` saved + quality review Approved |
-| 5a | `phases/phase-5a-report-and-data.md` | report.md + data.csv + data.xlsx exist |
-| 5b | `phases/phase-5b-dashboard-choice.md` | `_state/dashboard_choice.json` saved |
-| 5c | `phases/phase-5c-dashboard-generate.md` | Dashboard files exist (or choice=none) |
-| 5d | `phases/phase-5d-review.md` | report-reviewer returned Approved |
-| 5e | `phases/phase-5e-deploy.md` | Dashboard deployed (or user declined) |
-| 6 | `phases/phase-6-verify.md` | All files verified + Phase 5 completion gate passed |
-
-## Key State Files
-
-| File | Created in | Purpose |
-|------|-----------|---------|
-| credits.json | Phase 0 | initial Firecrawl credit count |
-| config.json | Phase 1 | topic, columns, scope |
-| sources.json | Phase 2 | approved source list |
-| normalized.json | Phase 4 | clean merged dataset |
+| Phase | File | Gate |
+|-------|------|------|
+| 0 | `phases/phase-0-onboarding.md` | firecrawl OK |
+| 1 | `phases/phase-1-clarify.md` | `_state/config.json` |
+| 2 | `phases/phase-2-discover.md` | `_state/sources.json` |
+| 3 | `phases/phase-3-collect.md` | >= 1 `raw_data_*.json` |
+| 4 | `phases/phase-4-normalize.md` | `normalized.json` + quality_review: Approved |
+| 5a | `phases/phase-5a-report-and-data.md` | `report.md` + `data.csv` + `data.xlsx` |
+| 5b | `phases/phase-5b-dashboard-choice.md` | `_state/dashboard_choice.json` |
+| 5c | `phases/phase-5c-dashboard-generate.md` | dashboard file(s) exist |
+| 5d | `phases/phase-5d-review.md` | report-reviewer VERDICT: Approved |
+| 5e | `phases/phase-5e-deploy.md` | deploy done or declined |
+| 6 | `phases/phase-6-verify.md` | all checks passed |
 
 ## TodoWrite Init
 
-At start, init TodoWrite with one item per phase from the Phase Table above (Phase 0 = in_progress, rest = pending). On resume, mark completed phases done and set next phase to in_progress.
+```
+Phase 0: Firecrawl & Python onboarding
+Phase 1: Accept task & clarify columns
+Phase 2: Discover sources
+Phase 3: Collect data
+Phase 4: Normalize & validate
+Phase 5a: Generate report & data files
+Phase 5b: Dashboard choice (MANDATORY)
+Phase 5c: Generate dashboard
+Phase 5d: Report review
+Phase 5e: Deploy dashboard (MANDATORY)
+Phase 6: Verify & present results
+```
 
-## Dispatch Loop
+Set Phase 0 = in_progress, rest = pending. On resume, mark completed phases done.
 
-For each phase: read the phase file, execute its instructions, verify the gate condition, mark TodoWrite complete, then read the next phase file. The orchestrator controls all transitions — phase files do NOT reference the next phase.
+## Output Directory
 
-**Note**: When reading a phase file, substitute `{output_dir}` with the actual output directory path from session file or Phase 1 config.
-
-## Output Directory Format
+Format: `{cwd}/output/YYYY-MM-DD-{topic-slug}/`
 
 ```
-{cwd}/output/YYYY-MM-DD-{topic-slug}/
-  _state/          # intermediate JSON files
-  .firecrawl/      # raw Firecrawl outputs
+output/YYYY-MM-DD-{topic-slug}/
+  _state/           # intermediate JSON files
+  .firecrawl/       # raw Firecrawl outputs
+  .superscrape-session.json
   report.md
   data.csv
   data.xlsx
   dashboard.py / dashboard.html
 ```
+
+## Session File Format
+
+```json
+{
+  "version": 4,
+  "output_dir": "output/YYYY-MM-DD-{topic-slug}",
+  "topic": "...",
+  "language": "...",
+  "complexity": "SIMPLE|MEDIUM|COMPLEX",
+  "current_phase": "phase-0",
+  "completed_phases": [],
+  "created_at": "ISO timestamp"
+}
+```
+
+## Dispatch Loop
+
+For each phase: read the phase file, execute, verify gate, mark TodoWrite complete, read next phase file. Substitute `{output_dir}` with actual path. Phase files do NOT reference the next phase -- the orchestrator controls all transitions.
 
 ---
 
