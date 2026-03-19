@@ -2,7 +2,11 @@
 
 ## Pre-check
 
-No file gate — the orchestrator verifies that Phase 5e (deploy) is in completed_phases before dispatching this phase. If not, go back to Phase 5e.
+```bash
+test -f {output_dir}/_state/phase5e_done.json && echo "GATE OK" || echo "GATE FAIL"
+```
+
+If GATE FAIL — return to previous phase.
 
 ## Instructions
 
@@ -56,15 +60,13 @@ Show:
 
 Present the completion summary with: topic, total records, number of sources, file list, and deploy URL if applicable.
 
-## Update Session
+## Save State
 
 **DELETE** `.superscrape-session.json` — only incomplete sessions should persist on disk:
 ```bash
 rm {output_dir}/.superscrape-session.json
 ```
 
-## Done
+## Next
 
-All files verified. Phase 5 completion gate passed. Results presented to user.
-
-Phase 6 complete.
+Pipeline complete. No next phase.

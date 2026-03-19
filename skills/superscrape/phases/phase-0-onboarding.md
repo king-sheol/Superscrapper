@@ -28,7 +28,7 @@ If npm not found, tell the user to install Node.js first. Re-run `firecrawl --st
 
 **"Authenticated"** — ready. Note the credits balance and concurrency limits from the output.
 
-### 1b. Save Initial Credit Count
+### 2. Save Initial Credit Count
 
 After successful authentication, parse the credits from `firecrawl --status` output and save:
 
@@ -39,14 +39,14 @@ import sys, json, re
 text = sys.stdin.read()
 m = re.search(r'(\d+)\s*credits', text, re.IGNORECASE)
 credits = int(m.group(1)) if m else 0
-json.dump({'initial_credits': credits}, open('{output_dir}/_state/credits.json', 'w'))
+json.dump({'initial_credits': credits, 'recorded_at': '$(date -Iseconds)'}, open('{output_dir}/_state/credits.json', 'w'))
 print(f'Saved {credits} credits')
 "
 ```
 
-**Note**: If output_dir is not yet known (topic not decided), save credits.json to a temp location and move it in Phase 1. Alternatively, store the credit count in memory and write the file when creating `_state/` in Phase 1.
+**Note**: If output_dir is not yet known (topic not decided), store the credit count in memory and write credits.json when creating `_state/` in Phase 1.
 
-### 2. Check Python
+### 3. Check Python
 
 ```bash
 python --version
@@ -59,12 +59,15 @@ Then ensure openpyxl is available:
 pip install openpyxl
 ```
 
-### 3. Do NOT create output directory
+### 4. Do NOT create output directory
 
 Output directory creation is deferred to Phase 1 after the topic is known.
 
-## Done
+## Save State
 
-Both Firecrawl (authenticated) and Python (3.8+ with openpyxl) are confirmed ready.
+Write to `_state/credits.json`: `{ "initial_credits": N, "recorded_at": "ISO" }`
+Update `.superscrape-session.json`: current_phase -> "phase-1"
 
-Phase 0 complete.
+## Next
+
+Read `phases/phase-1-clarify.md` and continue.

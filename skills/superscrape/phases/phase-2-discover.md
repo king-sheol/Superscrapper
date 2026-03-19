@@ -3,10 +3,10 @@
 ## Pre-check
 
 ```bash
-cat {output_dir}/_state/config.json > /dev/null 2>&1 && echo "GATE OK" || echo "GATE FAIL: config.json missing"
+test -f {output_dir}/_state/config.json && echo "GATE OK" || echo "GATE FAIL"
 ```
 
-If GATE FAIL — go back to Phase 1.
+If GATE FAIL — return to previous phase.
 
 ## Instructions
 
@@ -43,9 +43,9 @@ Which ones to use? Add others?
 
 Wait for user confirmation before proceeding.
 
-### 4. Save State
+## Save State
 
-Write `{output_dir}/_state/sources.json`:
+Write to `_state/sources.json`:
 ```json
 {
   "sources": [
@@ -53,13 +53,8 @@ Write `{output_dir}/_state/sources.json`:
   ]
 }
 ```
+Update `.superscrape-session.json`: current_phase -> "phase-3"
 
-## Update Session
+## Next
 
-Update `.superscrape-session.json`: set `current_phase` to `"phase-3"`, add `"phase-2"` to `completed_phases`.
-
-## Done
-
-Sources confirmed by user and saved to sources.json.
-
-Phase 2 complete.
+Read `phases/phase-3-collect.md` and continue.

@@ -1,8 +1,14 @@
 # Phase 5e: Deploy Dashboard (MANDATORY)
 
+**This phase is MANDATORY. Do not skip.**
+
 ## Pre-check
 
-No file gate — the orchestrator verifies that Phase 5d (report-reviewer VERDICT: Approved) is in completed_phases before dispatching this phase. If not, go back to Phase 5d.
+```bash
+test -f {output_dir}/_state/phase5d_done.json && echo "GATE OK" || echo "GATE FAIL"
+```
+
+If GATE FAIL — return to previous phase.
 
 ## Instructions
 
@@ -42,18 +48,15 @@ ssh -o BatchMode=yes -o ConnectTimeout=5 user@IP "echo ok" 2>/dev/null
 ```
 
 6. If key auth fails — show user the public key and ask them to add it:
-   "Скопируй этот ключ на сервер. В терминале выполни:"
    ```
    ssh-copy-id user@IP
    ```
-   Или вручную добавь в ~/.ssh/authorized_keys на сервере.
 
 7. After key is confirmed working, save config:
 ```json
-// ~/.superscrape-servers.json
 {
   "default": {
-    "ip": "46.149.79.21",
+    "ip": "...",
     "user": "root",
     "port": 22,
     "app_dir": "/opt/streamlit-app",
@@ -98,12 +101,11 @@ If active — deploy success. Show URL: http://IP:8501
 
 Deploy both sequentially: VPS first, then GitHub Pages.
 
-## Update Session
+## Save State
 
-Update `.superscrape-session.json`: set `current_phase` to `"phase-6"`, add `"phase-5e"` to `completed_phases`.
+Write to `_state/phase5e_done.json`: `{ "deployed": true, "deploy_urls": [...] }` (or `{ "deployed": false, "reason": "user declined" }`)
+Update `.superscrape-session.json`: current_phase -> "phase-6"
 
-## Done
+## Next
 
-Dashboard deployed (or skipped if choice=none).
-
-Phase 5e complete.
+Read `phases/phase-6-verify.md` and continue.

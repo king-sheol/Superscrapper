@@ -3,10 +3,10 @@
 ## Pre-check
 
 ```bash
-ls {output_dir}/_state/raw_data_*.json > /dev/null 2>&1 && echo "GATE OK" || echo "GATE FAIL: no raw_data files"
+ls {output_dir}/_state/raw_data_*.json > /dev/null 2>&1 && echo "GATE OK" || echo "GATE FAIL"
 ```
 
-If GATE FAIL — go back to Phase 3.
+If GATE FAIL — return to previous phase.
 
 ## Instructions
 
@@ -14,7 +14,7 @@ If GATE FAIL — go back to Phase 3.
 
 Load all `_state/raw_data_*.json` files and merge into a single dataset. Track which records came from which source.
 
-### 2. Defense-in-Depth Validation (4 Layers)
+### 2. Defense-in-Depth Validation (5 Layers)
 
 Apply validation layers sequentially:
 
@@ -24,7 +24,7 @@ Apply validation layers sequentially:
 
 **Layer 3 — Ranges**: Check that numbers fall within reasonable bounds. Flag dates outside expected range. Mark out-of-range values for review.
 
-**Layer 4 — Cross-check**: Compare data from different sources. If the same entity appears in 3+ sources with >30% divergence on a numeric field, flag with `"conflicting_data": true` and list the divergent values per source. Note which source values are most likely correct.
+**Layer 4 — Cross-validation**: Compare data from different sources. If the same entity appears in 3+ sources and >30% numeric discrepancy on any field, flag with `"conflicting_data": true` and list the divergent values per source. Note which source values are most likely correct.
 
 **Layer 5 — Dead project detection**: For each entity, check if the source URL returned HTTP 404 during collection or if the latest activity date is >6 months old. If so, flag with `"possibly_dead": true` and add reason ("site 404" or "last activity >6mo").
 
@@ -55,14 +55,14 @@ With clean data, perform analysis:
 - Compare with market benchmarks where possible
 - Assign confidence levels to each source: High / Medium / Low with justification
 
-### 6. Save State
+## Save State
 
-Write `{output_dir}/_state/normalized.json`:
+Write to `_state/normalized.json`:
 ```json
 {
   "topic": "...",
   "columns": ["..."],
-  "column_types": {"Name": "string", "Price": "number", ...},
+  "column_types": {"Name": "string", "Price": "number"},
   "records": [...],
   "flags": {
     "conflicting_data": ["entity names with >30% divergence across 3+ sources"],
@@ -80,13 +80,8 @@ Write `{output_dir}/_state/normalized.json`:
   "collection_date": "YYYY-MM-DD"
 }
 ```
+Update `.superscrape-session.json`: current_phase -> "phase-5a"
 
-## Update Session
+## Next
 
-Update `.superscrape-session.json`: set `current_phase` to `"phase-5a"`, add `"phase-4"` to `completed_phases`.
-
-## Done
-
-Data normalized, validated (quality review Approved), and analyzed.
-
-Phase 4 complete.
+Read `phases/phase-5a-report-and-data.md` and continue.

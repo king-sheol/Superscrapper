@@ -4,10 +4,10 @@
 
 ```bash
 choice=$(python -c "import json; print(json.load(open('{output_dir}/_state/dashboard_choice.json'))['choice'])" 2>/dev/null)
-if [ "$choice" = "none" ] || [ -f {output_dir}/dashboard.py ] || [ -f {output_dir}/dashboard.html ]; then echo "GATE OK"; else echo "GATE FAIL: dashboard files missing for choice=$choice"; fi
+if [ "$choice" = "none" ] || [ -f {output_dir}/dashboard.py ] || [ -f {output_dir}/dashboard.html ]; then echo "GATE OK"; else echo "GATE FAIL"; fi
 ```
 
-If GATE FAIL — go back to Phase 5c.
+If GATE FAIL — return to previous phase.
 
 ## Instructions
 
@@ -29,12 +29,11 @@ Dispatch **report-reviewer** subagent. The reviewer checks:
 
 Phase 5d is NOT complete until report-reviewer returns **VERDICT: Approved**.
 
-## Update Session
+## Save State
 
-Update `.superscrape-session.json`: set `current_phase` to `"phase-5e"`, add `"phase-5d"` to `completed_phases`.
+Write to `_state/phase5d_done.json`: `{ "reviewer_verdict": "Approved", "iterations": N }`
+Update `.superscrape-session.json`: current_phase -> "phase-5e"
 
-## Done
+## Next
 
-Report review passed (VERDICT: Approved).
-
-Phase 5d complete.
+Read `phases/phase-5e-deploy.md` and continue.

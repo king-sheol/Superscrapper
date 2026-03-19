@@ -3,10 +3,10 @@
 ## Pre-check
 
 ```bash
-firecrawl --status 2>&1 | grep -q "Authenticated" && echo "GATE OK" || echo "GATE FAIL: Firecrawl not authenticated"
+firecrawl --status 2>&1 | grep -q "Authenticated" && echo "GATE OK" || echo "GATE FAIL"
 ```
 
-If GATE FAIL — go back to Phase 0.
+If GATE FAIL — return to previous phase.
 
 ## Instructions
 
@@ -56,10 +56,11 @@ Write `{output_dir}/_state/config.json`:
 Write `{output_dir}/.superscrape-session.json`:
 ```json
 {
-  "version": 3,
+  "version": 4,
   "output_dir": "{output_dir}",
   "topic": "{topic}",
   "language": "{detected_language}",
+  "complexity": null,
   "current_phase": "phase-1",
   "completed_phases": ["phase-0", "phase-1"],
   "created_at": "{ISO timestamp}"
@@ -68,8 +69,11 @@ Write `{output_dir}/.superscrape-session.json`:
 
 Also: if credits.json was saved to a temp location in Phase 0, move it to `{output_dir}/_state/credits.json` now.
 
-## Done
+## Save State
 
-config.json and session file saved. Columns confirmed by user.
+Write to `_state/config.json`: topic, data_type, columns, scope
+Update `.superscrape-session.json`: current_phase -> "phase-2"
 
-Phase 1 complete.
+## Next
+
+Read `phases/phase-2-discover.md` and continue.
