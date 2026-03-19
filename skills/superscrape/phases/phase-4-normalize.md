@@ -24,7 +24,21 @@ Apply validation layers sequentially:
 
 **Layer 3 — Ranges**: Check that numbers fall within reasonable bounds. Flag dates outside expected range. Mark out-of-range values for review.
 
-**Layer 4 — Cross-validation**: Compare data from different sources. If the same entity appears in 3+ sources and >30% numeric discrepancy on any field, flag with `"conflicting_data": true` and list the divergent values per source. Note which source values are most likely correct.
+**Layer 4 — Cross-validation**: For each entity (by name) found in 2+ sources, compare numeric values:
+- If 3+ sources have the same entity: divergence >30% on any numeric field → flag as "conflicting data"
+- If 2 sources have the same entity: divergence >50% → flag as "conflicting data"
+- If fewer than 2 sources have overlapping entities → skip cross-validation, note in output: "Cross-validation not possible: insufficient source overlap"
+
+Save conflict flags in normalized.json under a "conflicts" key:
+```json
+{
+  "conflicts": [
+    {"entity": "Bitrix24", "field": "price", "values": {"KP.ru": 2490, "A2is.ru": 2990}, "divergence": "20%"}
+  ]
+}
+```
+
+Show conflicts to user in the Phase 4 checkpoint before proceeding.
 
 **Layer 5 — Dead project detection**: For each entity, check if the source URL returned HTTP 404 during collection or if the latest activity date is >6 months old. If so, flag with `"possibly_dead": true` and add reason ("site 404" or "last activity >6mo").
 
