@@ -29,8 +29,8 @@ skills/superscrape/
 │   ├── phase-5a-report-and-data.md
 │   ├── phase-5b-dashboard-choice.md
 │   ├── phase-5c-dashboard-generate.md
-│   ├── phase-5d-deploy.md
-│   ├── phase-5e-review.md
+│   ├── phase-5d-review.md           (report-reviewer FIRST)
+│   ├── phase-5e-deploy.md           (deploy AFTER review passes)
 │   └── phase-6-verify.md
 └── references/
     ├── report-format.md             (unchanged)
@@ -46,11 +46,13 @@ Session file in output directory (not CWD):
 
 ```json
 {
+  "version": 4,
   "output_dir": "output/2026-03-17-web3-esports-games",
   "topic": "Web3 blockchain games esports 2026",
   "language": "ru",
   "current_phase": "phase-3",
   "completed_phases": ["phase-0", "phase-1", "phase-2"],
+  "complexity": "COMPLEX",
   "created_at": "2026-03-17T19:00:00Z"
 }
 ```
@@ -67,7 +69,12 @@ Session file in output directory (not CWD):
 Each phase file starts with executable bash pre-check:
 
 ```bash
-cat output/{dir}/_state/sources.json > /dev/null 2>&1 && echo "GATE OK" || echo "GATE FAIL: Phase 2 not complete"
+test -f output/{dir}/_state/sources.json && echo "GATE OK" || echo "GATE FAIL: Phase 2 not complete"
+```
+
+For gates requiring content verification (e.g., quality_review field):
+```bash
+grep -q '"quality_review": "Approved"' output/{dir}/_state/normalized.json 2>/dev/null && echo "GATE OK" || echo "GATE FAIL: quality review not approved"
 ```
 
 If GATE FAIL — do not proceed, return to previous phase.
@@ -84,8 +91,8 @@ Phase table with gates:
 | 5a | phase-5a-report-and-data.md | report.md + data.csv + data.xlsx exist |
 | 5b | phase-5b-dashboard-choice.md | _state/dashboard_choice.json exists |
 | 5c | phase-5c-dashboard-generate.md | dashboard file(s) exist |
-| 5d | phase-5d-deploy.md | deploy completed or user declined |
-| 5e | phase-5e-review.md | report-reviewer VERDICT: Approved |
+| 5d | phase-5d-review.md | report-reviewer VERDICT: Approved |
+| 5e | phase-5e-deploy.md | deploy completed or user declined |
 | 6 | phase-6-verify.md | all checks passed |
 
 ## 3. Dashboard Pipeline
@@ -138,7 +145,12 @@ Outputs: creative brief:
 
 ### 4.1 design-rules.md (~100 lines)
 
-Replaces current `dashboard-template.md`. Contains ONLY:
+**Migration:** This file replaces BOTH `dashboard-template.md` AND `design-system.md`. After implementation:
+- `dashboard-template.md` → DELETE (content merged into design-rules.md)
+- `design-system.md` → DELETE (tokens moved into kit files, rules into design-rules.md)
+- `docs/DASHBOARD_DESIGN_SYSTEM.md` → DELETE (draft, superseded)
+
+Contains ONLY:
 
 **Decision table** (data type → components):
 
@@ -236,8 +248,15 @@ Utility:
 Assembly instructions:
 20. Step-by-step guide for dashboard-generator to assemble components
 
-**Color palette (8 colors, unchanged):**
+**CANONICAL color palette (8 colors — this is the SINGLE source of truth, overrides any other file):**
 `#60a5fa, #34d399, #fbbf24, #f87171, #a78bfa, #22d3ee, #fb923c, #e879f9`
+(Tailwind 400-level colors, optimized for dark backgrounds. Any conflicting palettes in design-system.md or dashboard-template.md are superseded by this.)
+
+**CANONICAL background colors:**
+- Page background: `#0f172a` (Tailwind slate-900)
+- Card/surface: `#1e293b` (Tailwind slate-800)
+- Border: `#334155` (Tailwind slate-700)
+- Text primary: `#f1f5f9`, secondary: `#94a3b8`, muted: `#64748b`
 
 **Typography (system fonts, unchanged):**
 `-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`
@@ -318,19 +337,21 @@ or
 
 Orchestrator searches for `VERDICT:` string. If missing, re-dispatch.
 
-### 5.3 dashboard-generator.md → becomes mechanical assembler
+### 5.3 dashboard-generator.md → RENAMED to dashboard-designer.md
 
-No longer makes design decisions. Receives:
-- design-rules.md (decision table)
-- Kit file (code snippets)
-- Data + column classification
-- Optional: creative brief from art-director (for COMPLEX)
+The existing `dashboard-generator.md` is renamed to `dashboard-designer.md` and its role is narrowed:
+- Reads: `design-rules.md` (decision table) + kit file (code snippets)
+- Receives: data + column classification
+- If COMPLEX: also reads art-director brief
+- Assembles final HTML/Python from kit components
+- Does NOT invent styles — copies from kit, replaces placeholders
+- Phase 5c dispatches `superscraper:dashboard-designer` (not generator)
 
-Assembles code by: reading kit → choosing components per decision table → replacing placeholders → outputting file.
+There is NO separate dashboard-generator agent. Designer = the only maker agent.
 
 ### 5.4 NEW: dashboard-art-director.md
 
-Only dispatched for COMPLEX dashboards.
+Only dispatched for COMPLEX dashboards (records >= 50 OR columns >= 12).
 
 Receives: data summary (record count, column types, unique values per category).
 
@@ -341,15 +362,7 @@ Outputs creative brief:
 - Hide/show: which columns in table vs detail panel
 - Special: any data-specific considerations
 
-### 5.5 dashboard-designer.md (NEW)
-
-Replaces dashboard-generator for design phase.
-
-Reads: design-rules.md + kit file + data.
-If COMPLEX: also reads art-director brief.
-
-Assembles final HTML/Python from kit components.
-Does NOT invent styles — copies from kit.
+Fallback: if art-director fails or produces unusable brief, fall back to MEDIUM pipeline (designer uses decision table directly without brief).
 
 ### 5.6 dashboard-auditor.md (enhanced)
 
@@ -364,10 +377,10 @@ Enhanced with:
 ### 6.1 Data Quality
 
 Phase 3 enhancements:
-- **Cross-validation:** if same entity found in 3+ sources, compare numbers. >30% discrepancy → flag as "conflicting data" in normalized.json
 - **Dead project detection:** if source returns 404 or last activity >6 months → flag in _state/errors.json with root cause
 
-Phase 4:
+Phase 4 enhancements (after merge, before reviewer):
+- **Cross-validation:** if same entity found in 3+ sources, compare numbers. >30% discrepancy → flag as "conflicting data" in normalized.json (must happen in Phase 4, not Phase 3, because Phase 3 collects per-source independently)
 - data-quality-reviewer MUST be dispatched (gate enforced: normalized.json must contain "quality_review": "Approved")
 
 ### 6.2 Firecrawl Credit Economy
@@ -393,17 +406,38 @@ If credits < 20: warn user "Low Firecrawl credits, may not complete all sources.
 | skills/superscrape/references/dashboard-html-kit.md | REWRITE | Full component library with 20 components |
 | skills/superscrape/references/dashboard-streamlit-kit.md | REWRITE | Full Streamlit component library |
 | skills/superscrape/references/dashboard-template.md | DELETE | Replaced by design-rules.md |
+| skills/superscrape/references/design-system.md | DELETE | Tokens in kit files, rules in design-rules.md |
+| docs/DASHBOARD_DESIGN_SYSTEM.md | DELETE | Draft, superseded by design-rules.md |
 | agents/scraper.md | EDIT | Add strict JSON output, credit limit |
-| agents/dashboard-generator.md | REWRITE | Mechanical assembler only |
-| agents/dashboard-designer.md | NEW | Design + assembly from kit |
+| agents/dashboard-generator.md | RENAME → dashboard-designer.md | Reads kit + design-rules, assembles dashboard |
 | agents/dashboard-art-director.md | NEW | Creative brief for COMPLEX data |
 | agents/dashboard-auditor.md | EDIT | Enhanced checklist, screenshot compare |
 | agents/data-quality-reviewer.md | EDIT | Add VERDICT format |
 | agents/report-reviewer.md | EDIT | Add VERDICT format |
 
-## 8. What Does NOT Change
+## 8. Complexity Computation
+
+Complexity is computed at the START of Phase 5b (dashboard choice), because that is when normalized.json is available with final record count and column classification.
+
+```
+records = len(data)
+columns = len(column_types)
+mixed = has_date AND has_rating  # or other mixed signals
+
+if records >= 50 or columns >= 12 or mixed:
+    complexity = "COMPLEX"
+elif records >= 20 or columns >= 8:
+    complexity = "MEDIUM"
+else:
+    complexity = "SIMPLE"
+```
+
+Complexity is saved in `.superscrape-session.json` and passed to Phase 5c.
+
+## 9. What Does NOT Change
 
 - report-format.md — works fine
+- agents/report-writer.md — works fine, no changes needed
 - xlsx-generator.md — works fine
 - skills/superscrape-dashboard/ — not tested yet
 - skills/superscrape-update/ — not tested yet
