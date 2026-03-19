@@ -16,11 +16,12 @@ description: >
 |---|------|
 | 1 | Language = user's language |
 | 2 | Firecrawl = CLI only via Bash, never ToolSearch |
-| 3 | FORBIDDEN: browser tools, WebFetch, WebSearch, Chrome MCP |
+| 3 | FORBIDDEN: browser tools, WebFetch, WebSearch, Chrome MCP. EXCEPTION: dashboard-auditor may use preview tools (preview_start, preview_screenshot) for visual verification only. |
 | 4 | Phase 5b (dashboard choice) and 5e (deploy) = MANDATORY |
 | 5 | Subagents REQUIRED: scraper, dashboard-designer, reviewers |
 | 6 | Save `_state/` after EVERY phase |
 | 7 | NO final results until Phase 6 |
+| 8 | Python open() ALWAYS with encoding='utf-8'. CSV with encoding='utf-8-sig'. No exceptions. |
 
 ## Resume Protocol
 
