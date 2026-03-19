@@ -1,10 +1,10 @@
 # Design Rules — Dashboard Decision & Quality Guide
 
 Reference for dashboard-designer and dashboard-auditor agents.
-Contains ONLY rules and decisions. NO code — code lives in kit files.
+Contains ONLY rules and decisions. NO code — code lives in assembly files.
 
-- **For HTML code** → read `dashboard-html-kit.md`
-- **For Streamlit code** → read `dashboard-streamlit-kit.md`
+- **For HTML code** → read `dashboard-html-assembly.md`
+- **For Streamlit code** → read `dashboard-streamlit-assembly.md`
 
 ---
 
@@ -95,7 +95,7 @@ Read `column_types` object. Keys are column names, values are types.
 | Unformatted large numbers | Use formatNumber() — 1K, 1M, $ |
 | Empty screen on page load | Show loading skeleton with pulse animation |
 | Radar chart with 5+ items | Max 3 items — overlapping areas unreadable |
-| Default Streamlit appearance | Inject custom CSS (see Streamlit kit) |
+| Default Streamlit appearance | Inject custom CSS (see Streamlit assembly) |
 | Cyrillic labels truncated on axes | Abbreviate: max 10 chars. "RU" not "RU" |
 | Empty cells for missing data | Gray "N/A" badge |
 | Raw BOM in column names | Strip \uFEFF from all column names after loading |
@@ -188,3 +188,25 @@ server {
     }
 }
 ```
+
+---
+
+## 9. Column Priority (automatic)
+
+1. Name column — ALWAYS pinned left
+2. First numeric column (from decision table KPI #1)
+3. Second numeric column
+4. First categorical column (badges)
+5. Second categorical column
+6-8. Additional if screen width allows
+9+. HIDDEN — show only in detail panel
+
+Max visible columns: 8. Everything else → detail panel.
+Long text columns (avg >50 chars): ALWAYS hidden.
+
+## 10. Chart Fallback Rules
+
+- Any chart with <5 data points → replace with donut/bar by nearest category
+- Scatter with <30% fill rate → show warning "Shown N of M" + suggest alternative
+- Radar with <3 numeric columns → replace with horizontal bar
+- When falling back, choose the categorical column with highest fill rate
