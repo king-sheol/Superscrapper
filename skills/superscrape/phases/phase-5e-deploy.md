@@ -18,63 +18,47 @@ No deployment needed. Mark phase complete and proceed.
 
 ### If choice = "streamlit" or "both" — Deploy to VPS
 
-#### VPS Deploy — SSH Onboarding (one-time)
+### VPS Deploy Flow
 
-Before first deploy, check SSH access:
-
-1. Check for existing SSH key:
+**Step 0: Check for deprecated config**
 ```bash
-test -f ~/.ssh/id_rsa.pub && echo "KEY EXISTS" || echo "NO KEY"
+cat ~/.superscrape-servers.json 2>/dev/null
 ```
+If found → read VPS config, migrate to `~/.claude/superscraper.local.md`, warn:
+"Migrated VPS config from deprecated ~/.superscrape-servers.json to ~/.claude/superscraper.local.md"
 
-2. If NO KEY — generate one:
+**Step 1: Read local config**
 ```bash
-ssh-keygen -t rsa -b 4096 -N "" -f ~/.ssh/id_rsa
+cat ~/.claude/superscraper.local.md 2>/dev/null
 ```
+Parse YAML frontmatter for `vps_host`, `vps_user`, `ssh_key_configured`.
 
-3. Check for saved server config:
+**Step 2: If configured → deploy automatically**
+If has `vps_host` AND `ssh_key_configured: true`:
 ```bash
-cat ~/.superscrape-servers.json 2>/dev/null || echo "NO CONFIG"
+scp {output_dir}/dashboard.py {output_dir}/data.csv {output_dir}/requirements.txt {vps_user}@{vps_host}:/opt/streamlit-app/
+ssh {vps_user}@{vps_host} "cd /opt/streamlit-app && source venv/bin/activate && pip install -q -r requirements.txt && cp dashboard.py app.py && systemctl restart streamlit"
 ```
+Verify: `ssh {vps_user}@{vps_host} "systemctl is-active streamlit"` → should return "active"
 
-4. If NO CONFIG — ask user for server details via AskUserQuestion:
-   - IP address
-   - SSH user (default: root)
-   - SSH port (default: 22)
-
-5. Test SSH key auth:
-```bash
-ssh -o BatchMode=yes -o ConnectTimeout=5 user@IP "echo ok" 2>/dev/null
+**Step 3: If NOT configured → onboard**
+a. AskUserQuestion: "VPS IP и SSH user? (например root@1.2.3.4)"
+b. Check SSH key: `ls ~/.ssh/id_ed25519.pub 2>/dev/null`
+c. If no key: `ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N ""`
+d. Tell user: "Выполни эту команду в PowerShell:"
+   `type C:\Users\{username}\.ssh\id_ed25519.pub | ssh {user}@{ip} "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"`
+   "Введи пароль сервера когда попросит. После этого скажи 'готово'."
+e. Wait for user confirmation
+f. Verify: `ssh -o BatchMode=yes -o StrictHostKeyChecking=no {user}@{ip} "echo ok"` → should output "ok"
+g. Save to `~/.claude/superscraper.local.md`:
+```yaml
+---
+vps_host: "{ip}"
+vps_user: "{user}"
+ssh_key_configured: true
+---
 ```
-
-6. If key auth fails — show user the public key and ask them to add it:
-   ```
-   ssh-copy-id user@IP
-   ```
-
-7. After key is confirmed working, save config:
-```json
-{
-  "default": {
-    "ip": "...",
-    "user": "root",
-    "port": 22,
-    "app_dir": "/opt/streamlit-app",
-    "key_configured": true
-  }
-}
-```
-
-#### VPS Deploy — Automatic (after onboarding)
-
-Once SSH key is configured, deploy is fully automatic:
-```bash
-scp -o BatchMode=yes dashboard.py data.csv requirements.txt user@IP:/opt/streamlit-app/
-ssh -o BatchMode=yes user@IP "cd /opt/streamlit-app && cp dashboard.py app.py && source venv/bin/activate && pip install -q streamlit-echarts streamlit-aggrid 2>/dev/null && systemctl restart streamlit"
-```
-
-Verify: `ssh -o BatchMode=yes user@IP "systemctl is-active streamlit"`
-If active — deploy success. Show URL: http://IP:8501
+h. Proceed with Step 2 (deploy)
 
 ### If choice = "html" or "both" — Deploy to GitHub Pages
 
