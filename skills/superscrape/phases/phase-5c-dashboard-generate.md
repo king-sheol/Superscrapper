@@ -14,44 +14,32 @@ If GATE FAIL — return to previous phase.
 
 Skip dashboard generation entirely. Mark phase complete and proceed.
 
-### Complexity Branching
+### Dashboard Generation (base+assembly pattern)
 
-Read `complexity` from `_state/dashboard_choice.json` or session JSON.
+1. Read `_state/dashboard_choice.json` → get choice (streamlit/html/both/none)
 
-**COMPLEX** (records >= 50 OR columns >= 12):
-1. Dispatch **art-director** subagent first — produce a design brief with layout, color scheme, chart types, and interaction patterns
-2. If art-director fails or returns empty: fall back to MEDIUM pipeline below
-3. Pass the art-director brief to **dashboard-designer** subagent along with data
+2. **Complexity check:**
+   - Count rows in data.csv → records
+   - Count columns → columns
+   - If records >= 50 OR columns >= 12 → COMPLEX
+     - Try dispatch `dashboard-art-director` agent → get creative brief
+     - If art-director not available → proceed without brief (MEDIUM fallback)
+   - Else → SIMPLE/MEDIUM
 
-**MEDIUM** or **SIMPLE** (or COMPLEX fallback):
-1. Dispatch **dashboard-designer** subagent directly with data and standard templates
+3. **For Streamlit (choice = "streamlit" or "both"):**
+   a. Copy `skills/superscrape/references/dashboard-streamlit-base.py` to `{output_dir}/dashboard.py`
+   b. Dispatch `dashboard-designer` agent with prompt:
+      "Read `dashboard-streamlit-assembly.md` and follow the steps to customize the base template.
+       Output dir: {output_dir}. Topic: {topic}. Data: {output_dir}/data.csv."
+      If COMPLEX: also pass the art-director's creative brief.
 
-### If choice = "streamlit" or "both"
+4. **For HTML (choice = "html" or "both"):**
+   a. Copy `skills/superscrape/references/dashboard-html-base.html` to `{output_dir}/dashboard.html`
+   b. Dispatch `dashboard-designer` agent with prompt:
+      "Read `dashboard-html-assembly.md` and follow the steps to customize the base template.
+       Output dir: {output_dir}. Topic: {topic}. Data: {output_dir}/data.csv."
 
-Dispatch **dashboard-designer** subagent (type: streamlit):
-- Generates: `dashboard.py`, `Dockerfile`, `docker-compose.yml`, `nginx.conf`, `requirements.txt`
-- Use templates from `references/design-rules.md`
-- Verify syntax: `python -c "import ast; ast.parse(open('{output_dir}/dashboard.py').read()); print('OK')"`
-
-### If choice = "html" or "both"
-
-Dispatch **dashboard-designer** subagent (type: html):
-- Generates: `dashboard.html` (self-contained with embedded data, interactive filters, search, sorting)
-- Use templates from `references/design-rules.md`
-- Verify: file exists and is non-empty
-
-### If choice = "both"
-
-Run both subagents in parallel.
-
-### Visual Audit
-
-After dashboard-designer completes, dispatch the `dashboard-auditor` subagent:
-
-Prompt: "Audit the dashboard at {output_dir}/dashboard.html (and/or dashboard.py). Read the design rules at ${CLAUDE_PLUGIN_ROOT}/skills/superscrape/references/design-rules.md first. Output dir: {output_dir}"
-
-If VERDICT: Issues Found -- dashboard-auditor fixes them and re-audits (max 3 iterations).
-If VERDICT: Approved -- proceed.
+5. **Audit:** Dispatch `dashboard-auditor` agent. If returns Issues → fix and re-audit (max 3 iterations).
 
 This phase is NOT complete until dashboard-auditor returns Approved.
 
