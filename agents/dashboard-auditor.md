@@ -29,7 +29,33 @@ Read this file FIRST:
 
 ## Process
 
-### Step 1: Launch dashboard locally
+Two-level audit: Level 1 always runs, Level 2 is attempted but optional.
+
+---
+
+## Code Audit Checklist (MANDATORY)
+Read the generated dashboard file as text and verify ALL items:
+- [ ] AG Grid import present (not st.dataframe for main table in Streamlit)
+- [ ] `encoding='utf-8'` in all `open()` calls
+- [ ] `encoding='utf-8-sig'` in all `read_csv()` calls
+- [ ] Design tokens: #0f172a, #1e293b, #334155 present in CSS/styling
+- [ ] Tooltip extraCssText with max-width and word-wrap
+- [ ] Empty state handlers for all components
+- [ ] Footer with metadata (date, sources, credits)
+- [ ] BOM strip (`\uFEFF` removal) present
+- [ ] Max 8 visible columns in table
+- [ ] Detail panel/expander present
+- [ ] No raw HTML tags in st.dataframe (if fallback used)
+
+---
+
+## Visual Audit (OPTIONAL)
+Attempt to preview the dashboard using preview tools (preview_start, preview_screenshot).
+If preview tools unavailable or fail → skip visual audit, rely on code audit.
+Preview tools (preview_start, preview_screenshot) are PERMITTED for visual verification.
+Chrome MCP remains FORBIDDEN.
+
+### Launch dashboard locally
 
 For HTML dashboard:
 ```bash
@@ -43,7 +69,7 @@ For Streamlit:
 cd {output_dir} && streamlit run dashboard.py --server.port 8502 --server.headless true &
 ```
 
-### Step 2: Take screenshots of each section
+### Take screenshots of each section
 
 Using preview tools, capture:
 1. Full page (above the fold)
@@ -55,7 +81,7 @@ Using preview tools, capture:
 7. Filters sidebar
 8. Mobile view (if responsive)
 
-### Step 3: Audit checklist
+### Visual audit checklist
 
 For each screenshot, check against the design system:
 
