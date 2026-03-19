@@ -10,17 +10,16 @@ If GATE FAIL — return to previous phase.
 
 ## Instructions
 
-### 1. Credit Distribution
+### 1. Firecrawl Credit Budget
 
-Read `{output_dir}/_state/credits.json` to get `initial_credits`. Read `{output_dir}/_state/sources.json` to count approved sources.
+Read `{output_dir}/_state/firecrawl_credits.json` → get initial_credits. Read `{output_dir}/_state/sources.json` to count approved sources.
 
-Calculate per-source budget:
-```
-source_count = number of approved sources
-max_per_source = min(5, floor(initial_credits / source_count))
-```
+- If credits = 0 → STOP. Tell user: "No Firecrawl credits. Run `firecrawl --status` to check."
+- If credits < source_count → STOP. Tell user: "Not enough credits (N) for M sources. Reduce sources or add credits."
+- If credits < source_count × 5 → per_source = floor(credits / source_count). Warn user: "Limited budget: {per_source} requests per source."
+- Otherwise → per_source = 5
 
-Include this budget in each scraper subagent prompt: "You have N credits for this source. Do not exceed this budget." Prefer APIs over scraping when available (APIs cost 0 credits).
+Pass per_source limit to each scraper agent prompt. Prefer APIs over scraping when available (APIs cost 0 credits).
 
 ### 2. Dispatch Scraper Subagents
 
@@ -36,7 +35,7 @@ Dispatch one **scraper** subagent per approved source (max 5 parallel). Each age
 After EACH scraper agent returns:
 1. Parse the JSON data block from the agent's response
 2. Immediately save to `{output_dir}/_state/raw_data_{source_slug}.json`
-3. Message the user with progress: **"N/M sources collected"** (e.g. "3/5 sources collected")
+3. Print progress to chat: "✅ {source_name}: {records} записей ({n}/{total} источников)"
 
 Do NOT wait for all agents to finish before saving. Each agent's data is saved individually.
 
@@ -51,12 +50,11 @@ If a scraper returns FAIL with HTTP 404:
 
 ### 5. Rate Limit Handling
 
-If a rate limit is hit mid-collection:
-1. Save all data collected so far (individual raw_data files)
-2. Save current state to `_state/` so session can resume
-3. Message: **"Rate limit reached, data saved. Say 'continue' when ready."**
-4. Tell the user which sources succeeded and which remain
-5. Wait for user to say "continue" before retrying remaining sources
+If a scraper agent returns FAIL with rate limit (HTTP 429):
+1. Print: "⚠️ Rate limit достигнут. Данные сохранены в _state/. Скажи 'продолжай' когда будешь готов."
+2. Save all collected data to `_state/` so session can resume
+3. Tell the user which sources succeeded and which remain
+4. Wait for user to say "continue"/"продолжай" before retrying remaining sources
 
 ### 6. Error Handling (Root Cause)
 
