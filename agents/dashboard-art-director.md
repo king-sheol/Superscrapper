@@ -21,7 +21,7 @@ description: |
   assistant: "Dataset is simple (25 records, 8 columns). Dispatching dashboard-designer directly — no art director needed."
   <commentary>
   Below the complexity threshold, dashboard-designer handles layout decisions
-  using the standard decision table from dashboard-template.md.
+  using the standard decision table from design-rules.md.
   </commentary>
   </example>
 
@@ -35,7 +35,7 @@ description: |
   </commentary>
   </example>
 model: inherit
-color: purple
+color: magenta
 tools: ["Read", "Bash"]
 ---
 

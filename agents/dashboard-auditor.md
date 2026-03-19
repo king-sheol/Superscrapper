@@ -24,9 +24,8 @@ You are a dashboard design auditor. Your job is to visually verify that generate
 
 ## Design System Reference
 
-Read BOTH files FIRST:
-1. `Read ${CLAUDE_PLUGIN_ROOT}/skills/superscrape/references/design-rules.md` — anti-patterns and mandatory rules
-2. `Read ${CLAUDE_PLUGIN_ROOT}/skills/superscrape/references/design-system.md` — tokens and component specs
+Read this file FIRST:
+1. `Read ${CLAUDE_PLUGIN_ROOT}/skills/superscrape/references/design-rules.md` — anti-patterns, mandatory rules, tokens, and component specs (single source of truth)
 
 ## Process
 

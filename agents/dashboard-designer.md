@@ -39,7 +39,7 @@ For "dashboard-only" mode additionally:
 - **dashboard_choice**: "streamlit", "html", or "both"
 - **topic**, **column list with types**, **analysis summary** (leaders, patterns, KPI values)
 - Read design-rules.md via `Read ${CLAUDE_PLUGIN_ROOT}/skills/superscrape/references/design-rules.md`
-- Read dashboard-template.md via `Read ${CLAUDE_PLUGIN_ROOT}/skills/superscrape/references/dashboard-template.md`
+- Read design-rules.md via `Read ${CLAUDE_PLUGIN_ROOT}/skills/superscrape/references/design-rules.md`
 - Read data from `{output_dir}/data.csv`
 
 ## Process
@@ -54,7 +54,7 @@ For "dashboard-only" mode additionally:
 ### If mode = "dashboard-only":
 
 1. Read design-rules.md via `Read ${CLAUDE_PLUGIN_ROOT}/skills/superscrape/references/design-rules.md` — this defines WHAT: tokens, spacing, anti-patterns
-2. Read dashboard-template.md via `Read ${CLAUDE_PLUGIN_ROOT}/skills/superscrape/references/dashboard-template.md` — get decision table + color palette
+2. (design-rules.md already read in step 1 — it contains decision table + color palette)
 3. Read config.json from `{output_dir}/config.json` — get column types
 4. Read data from `{output_dir}/data.csv` — verify data types (dual detection: config.json metadata vs actual CSV values)
 5. Based on `dashboard_choice`:
@@ -104,7 +104,7 @@ All files written to the output directory. Report what was generated:
 - Badge colors: green=#059669 (Да), red=#dc2626 (Нет), amber=#d97706 (Триал/Частично)
 - KPI cards: glassmorphism style (backdrop-filter blur, rgba background, hover glow+lift)
 - Tooltips: extraCssText with max-width 400px, word-wrap; truncate long text to 100 chars
-- All ECharts use dark theme base #0f172a and palette from dashboard-template.md. HTML uses ECharts + AG Grid + Tailwind (CDN). Streamlit uses streamlit-echarts + streamlit-aggrid. ECharts configs are structurally identical between HTML and Streamlit.
+- All ECharts use dark theme base #0f172a and palette from design-rules.md. HTML uses ECharts + AG Grid + Tailwind (CDN). Streamlit uses streamlit-echarts + streamlit-aggrid. ECharts configs are structurally identical between HTML and Streamlit.
 - HTML dashboard must work offline (except ECharts, AG Grid, Tailwind, Lucide CDNs)
 - Data in HTML is embedded, not loaded from external file
 - Streamlit dashboard reads from data.csv (co-located)

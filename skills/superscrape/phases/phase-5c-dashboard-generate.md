@@ -30,14 +30,14 @@ Read `complexity` from `_state/dashboard_choice.json` or session JSON.
 
 Dispatch **dashboard-designer** subagent (type: streamlit):
 - Generates: `dashboard.py`, `Dockerfile`, `docker-compose.yml`, `nginx.conf`, `requirements.txt`
-- Use templates from `references/dashboard-template.md`
+- Use templates from `references/design-rules.md`
 - Verify syntax: `python -c "import ast; ast.parse(open('{output_dir}/dashboard.py').read()); print('OK')"`
 
 ### If choice = "html" or "both"
 
 Dispatch **dashboard-designer** subagent (type: html):
 - Generates: `dashboard.html` (self-contained with embedded data, interactive filters, search, sorting)
-- Use templates from `references/dashboard-template.md`
+- Use templates from `references/design-rules.md`
 - Verify: file exists and is non-empty
 
 ### If choice = "both"
@@ -48,7 +48,7 @@ Run both subagents in parallel.
 
 After dashboard-designer completes, dispatch the `dashboard-auditor` subagent:
 
-Prompt: "Audit the dashboard at {output_dir}/dashboard.html (and/or dashboard.py). Read the design system at ${CLAUDE_PLUGIN_ROOT}/skills/superscrape/references/design-system.md first. Output dir: {output_dir}"
+Prompt: "Audit the dashboard at {output_dir}/dashboard.html (and/or dashboard.py). Read the design rules at ${CLAUDE_PLUGIN_ROOT}/skills/superscrape/references/design-rules.md first. Output dir: {output_dir}"
 
 If VERDICT: Issues Found -- dashboard-auditor fixes them and re-audits (max 3 iterations).
 If VERDICT: Approved -- proceed.
