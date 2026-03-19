@@ -28,23 +28,20 @@ If npm not found, tell the user to install Node.js first. Re-run `firecrawl --st
 
 **"Authenticated"** — ready. Note the credits balance and concurrency limits from the output.
 
-### 2. Save Initial Credit Count
+### 2. Record Firecrawl credits
 
-After successful authentication, parse the credits from `firecrawl --status` output and save:
+Run `firecrawl --status 2>&1` and parse the output.
+Look for a number near "credits" or "remaining" in the output.
+Example: "● Authenticated via stored credentials (525 credits remaining)" → extract 525
 
-```bash
-mkdir -p {output_dir}/_state 2>/dev/null || true
-firecrawl --status 2>&1 | python -c "
-import sys, json, re
-text = sys.stdin.read()
-m = re.search(r'(\d+)\s*credits', text, re.IGNORECASE)
-credits = int(m.group(1)) if m else 0
-json.dump({'initial_credits': credits, 'recorded_at': '$(date -Iseconds)'}, open('{output_dir}/_state/credits.json', 'w'))
-print(f'Saved {credits} credits')
-"
+Save to `{output_dir}/_state/firecrawl_credits.json`:
+```json
+{"initial_credits": 525, "timestamp": "2026-03-19T..."}
 ```
 
-**Note**: If output_dir is not yet known (topic not decided), store the credit count in memory and write credits.json when creating `_state/` in Phase 1.
+If credits cannot be parsed → save `{"initial_credits": -1}` and warn user: "Could not determine Firecrawl credits. Proceeding without budget limit."
+
+**Note**: If output_dir is not yet known (topic not decided), store the credit count in memory and write firecrawl_credits.json when creating `_state/` in Phase 1.
 
 ### 3. Check Python
 
@@ -65,7 +62,7 @@ Output directory creation is deferred to Phase 1 after the topic is known.
 
 ## Save State
 
-Write to `_state/credits.json`: `{ "initial_credits": N, "recorded_at": "ISO" }`
+Write to `_state/firecrawl_credits.json`: `{ "initial_credits": N, "timestamp": "ISO" }`
 Update `.superscrape-session.json`: current_phase -> "phase-1"
 
 ## Next
