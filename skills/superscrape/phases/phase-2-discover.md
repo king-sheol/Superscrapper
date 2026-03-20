@@ -20,6 +20,30 @@ Dispatch 2-3 search agents in parallel using the Agent tool:
 
 Each agent returns a list of sources with: URL, type (aggregator/official/review/API), estimated data quality (High/Medium/Low).
 
+### 1b. Source Accessibility Check (ZERO Firecrawl credits)
+
+Before mapping, verify top sources are actually reachable using curl (NOT firecrawl — saves credits):
+```bash
+# HEAD request — costs 0 Firecrawl credits
+curl -sI -o /dev/null -w "%{http_code}" --max-time 10 URL
+```
+
+Interpret HTTP status:
+- **200-399**: Accessible → proceed to mapping
+- **401/403**: Paywall or login required → mark as "restricted", warn user
+- **5xx**: Server down → skip, note in output
+- **000 (timeout)**: Possible geo-block or DNS failure → note, try one more time with `--connect-timeout 15`
+
+For sources that return 200, do a quick content check (still zero Firecrawl credits):
+```bash
+curl -sL --max-time 10 URL | head -c 2000
+```
+- If output contains "captcha", "challenge", "cf-browser-verification" → mark as "captcha-protected"
+- If output contains "access denied", "доступ запрещён", "forbidden" → mark as "restricted"
+- If output is empty or <100 bytes → possible geo-block
+
+Only proceed to map sources that are confirmed accessible.
+
 ### 2. Map Top Sources (Credit Economy)
 
 For the top 3 most promising sources, run `firecrawl map` to discover relevant URLs:
@@ -32,12 +56,26 @@ firecrawl map URL --search "{topic}" -o {output_dir}/.firecrawl/map-{slug}.txt
 
 ### 3. Checkpoint — User Confirmation
 
+**Source Reliability Classification** — classify each source BEFORE presenting to user:
+
+| Category | Reliability | Examples | Note |
+|----------|-------------|----------|------|
+| Aggregator/catalog | High | G2, Capterra, hostinghub.ru | Structured, verified data |
+| Official site | High | vendor's own pricing page | Authoritative but biased |
+| Professional review | Medium | techradar, vc.ru articles | Expert opinion, may be outdated |
+| Benchmark/testing | High | vpsbenchmarks.com | Measured data |
+| Forum/social media | Low | reddit, pikabu, habr comments | Subjective, unverifiable |
+| Blog/opinion | Low | personal blogs, medium posts | Anecdotal |
+
+**Rule**: If a source is classified as **Low reliability**, mark it with ⚠️ in the user presentation and add note: "User-generated content — data may be subjective and unverifiable."
+
 Use AskUserQuestion to present discovered sources:
 ```
 Found N sources. Here are the best:
-- [source 1] — type, ~X entries, quality: High
-- [source 2] — type, structured data
-- [source 3] — type, ~Y entries, quality: Medium
+- [source 1] — type, ~X entries, reliability: High ✅
+- [source 2] — type, structured data, reliability: High ✅
+- [source 3] — type, ~Y entries, reliability: Medium
+- ⚠️ [source 4] — forum/social media, reliability: Low (user-generated, subjective data)
 Which ones to use? Add others?
 ```
 
@@ -49,7 +87,7 @@ Write to `_state/sources.json`:
 ```json
 {
   "sources": [
-    {"url": "...", "type": "...", "quality": "...", "estimated_entries": 0, "approved": true}
+    {"url": "...", "type": "...", "quality": "...", "reliability": "High|Medium|Low", "estimated_entries": 0, "approved": true}
   ]
 }
 ```

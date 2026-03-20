@@ -34,6 +34,12 @@ Propose additional topic-specific columns based on data type:
 
 Use AskUserQuestion to present the proposed columns and get confirmation. Let the user add, remove, or modify columns before proceeding.
 
+**Important**: Present columns in two tiers:
+- **Core columns** (always collectible): Name, Source URL, Collection Date, Price, Rating — these are almost always available
+- **Extended columns** (may have gaps): specific features, SLA, support details — warn user: "These columns may not be available from all sources, resulting in partial data (N/A values)."
+
+This sets realistic expectations about fill rate before data collection begins.
+
 ### 4. Create Output Directory & Save State
 
 ```bash
@@ -72,6 +78,16 @@ Also: if credits.json was saved to a temp location in Phase 0, move it to `{outp
 ## Save State
 
 Write to `_state/config.json`: topic, data_type, columns, scope
+Write to `_state/pipeline_metrics.json`:
+```json
+{
+  "started_at": "{ISO timestamp}",
+  "agent_dispatches": 0,
+  "phase_timings": {},
+  "quality_gates": {},
+  "smoke_tests": {}
+}
+```
 Update `.superscrape-session.json`: current_phase -> "phase-2"
 
 ## Next

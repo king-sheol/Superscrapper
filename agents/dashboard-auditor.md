@@ -35,25 +35,60 @@ Two-level audit: Level 1 always runs, Level 2 is attempted but optional.
 
 ## Code Audit Checklist (MANDATORY)
 Read the generated dashboard file as text and verify ALL items:
+
+### Encoding & Imports
 - [ ] AG Grid import present (not st.dataframe for main table in Streamlit)
 - [ ] `encoding='utf-8'` in all `open()` calls
 - [ ] `encoding='utf-8-sig'` in all `read_csv()` calls
-- [ ] Design tokens: #0f172a, #1e293b, #334155 present in CSS/styling
-- [ ] Tooltip extraCssText with max-width and word-wrap
-- [ ] Empty state handlers for all components
-- [ ] Footer with metadata (date, sources, credits)
 - [ ] BOM strip (`\uFEFF` removal) present
-- [ ] Max 8 visible columns in table
-- [ ] Detail panel/expander present
-- [ ] No raw HTML tags in st.dataframe (if fallback used)
+
+### Design Tokens
+- [ ] Design tokens: #0f172a, #1e293b, #334155 present in CSS/styling
+- [ ] ALL chart colors reference design tokens, not default library colors
+- [ ] Tooltip extraCssText with max-width and word-wrap
+
+### Data Visibility (CRITICAL — reject if any fail)
+- [ ] ALL collected columns are accessible to user (no hidden columns that suppress data)
+- [ ] No hardcoded column count limits (e.g., `visible_cols[:8]` is FORBIDDEN — all columns must be reachable via scroll, expander, or detail panel)
+- [ ] ALL records visible on first load (default filter state must be "show all", not a subset)
+- [ ] Filter logic uses exact match for boolean fields (e.g., `== "Да"`, NOT `str.contains("а")`)
+
+### HTML Rendering (CRITICAL — reject if any fail)
+- [ ] No raw HTML tags visible in rendered table cells — check JsCode/cellRenderer output
+- [ ] If using JsCode badge renderer: verify it actually renders HTML, not literal `<span>` text
+- [ ] Test: search generated code for `<span` or `<div` inside JsCode strings — these MUST render as HTML, not as text
+- [ ] No `[object Object]` in tooltips or cells — add null checks in formatters
+
+### Components
+- [ ] Empty state handlers for all components
+- [ ] Footer with metadata (dynamically generated date via datetime, NOT hardcoded)
+- [ ] Detail panel/expander present for columns that don't fit in main table
+- [ ] Error handling: try/except for data loading with user-friendly message
+
+### CSS Quality (WARNING level)
+- [ ] Count `!important` declarations — if >5, flag as WARNING
+- [ ] No inline styles that override AG Grid theme causing white-on-dark glitches
+
+### Mobile & Accessibility (CRITICAL for HTML — these are in base template, reject if stripped)
+- [ ] HTML: `@media (max-width: 768px)` rules exist for KPI grid and sidebar — base template includes these, CRITICAL if missing (means base was overwritten)
+- [ ] `*:focus-visible` CSS rule present — base template includes this
+- [ ] Semantic HTML: `<main>`, `<header>`, `<section>` used (base template has these)
+- [ ] `aria-label` on chart containers and KPI grid (base template has these)
+- [ ] `role="img"` on chart divs, `role="table"` on AG Grid div (base template has these)
+
+### Accessibility (WARNING level)
+- [ ] Color contrast: text on all backgrounds meets 4.5:1 ratio
+- [ ] Keyboard: detail panel closeable with Escape key (check JS handler)
+- [ ] Touch targets: buttons/filters have min-height 44px in mobile breakpoint
 
 ---
 
-## Visual Audit (OPTIONAL)
-Attempt to preview the dashboard using preview tools (preview_start, preview_screenshot).
-If preview tools unavailable or fail → skip visual audit, rely on code audit.
+## Visual Audit (REQUIRED when preview tools available)
+You MUST attempt visual audit using preview tools (preview_start, preview_screenshot).
+If preview tools fail after 2 attempts → fall back to code-only audit with WARNING in verdict.
 Preview tools (preview_start, preview_screenshot) are PERMITTED for visual verification.
-Chrome MCP remains FORBIDDEN.
+
+**IMPORTANT**: If code audit found CRITICAL issues (raw HTML tags, hidden data, broken filters), you MUST reject even WITHOUT visual audit. Do not approve broken code hoping it "looks fine".
 
 ### Launch dashboard locally
 

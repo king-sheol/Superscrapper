@@ -491,7 +491,7 @@
             box-shadow: 0 4px 12px rgba(96, 165, 250, 0.3);
         }
 
-        /* ===== Responsive ===== */
+        /* ===== Responsive: Tablet ===== */
         @media (max-width: 768px) {
             .sidebar {
                 position: fixed;
@@ -518,6 +518,30 @@
             .detail-panel {
                 width: 100%;
             }
+            /* Touch targets */
+            button, select, input, .filter-btn, .detail-close {
+                min-height: 44px;
+                min-width: 44px;
+            }
+        }
+
+        /* ===== Responsive: Phone ===== */
+        @media (max-width: 480px) {
+            #kpi-grid {
+                grid-template-columns: 1fr !important;
+            }
+            .glass-card {
+                padding: 16px;
+            }
+            header .text-3xl {
+                font-size: 20px;
+            }
+        }
+
+        /* ===== Accessibility ===== */
+        *:focus-visible {
+            outline: 2px solid #60a5fa;
+            outline-offset: 2px;
         }
     </style>
 </head>
@@ -539,8 +563,8 @@
     </header>
 
     <!-- ===== KPI Grid ===== -->
-    <section class="px-6 mb-6">
-        <div id="kpi-grid" class="grid grid-cols-4 gap-4"></div>
+    <section class="px-6 mb-6" aria-label="Key metrics">
+        <div id="kpi-grid" class="grid grid-cols-4 gap-4" role="list"></div>
     </section>
 
     <!-- ===== Main Layout: Sidebar + Content ===== -->
@@ -565,13 +589,13 @@
             <!-- Primary Chart -->
             <section class="glass-card">
                 <h2 class="text-lg font-semibold text-white mb-4" id="chart-primary-title">Primary Chart</h2>
-                <div id="chart-primary" style="width:100%;height:360px;"></div>
+                <div id="chart-primary" style="width:100%;height:360px;" role="img" aria-label="Primary chart visualization"></div>
             </section>
 
             <!-- Comparison Chart -->
             <section class="glass-card">
                 <h2 class="text-lg font-semibold text-white mb-4" id="chart-comparison-title">Comparison Chart</h2>
-                <div id="chart-comparison" style="width:100%;height:360px;"></div>
+                <div id="chart-comparison" style="width:100%;height:360px;" role="img" aria-label="Comparison chart visualization"></div>
             </section>
 
             <!-- Data Table -->
@@ -583,7 +607,7 @@
                         Export CSV
                     </button>
                 </div>
-                <div id="data-table" class="ag-theme-alpine-dark" style="width:100%;height:520px;border-radius:8px;overflow:hidden;"></div>
+                <div id="data-table" class="ag-theme-alpine-dark" role="table" aria-label="Data table" style="width:100%;height:520px;border-radius:8px;overflow:hidden;"></div>
             </section>
         </main>
     </div>

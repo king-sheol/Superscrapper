@@ -198,11 +198,14 @@ server {
 3. Second numeric column
 4. First categorical column (badges)
 5. Second categorical column
-6-8. Additional if screen width allows
-9+. HIDDEN — show only in detail panel
+6+. All remaining columns — accessible via horizontal scroll in AG Grid
 
-Max visible columns: 8. Everything else → detail panel.
-Long text columns (avg >50 chars): ALWAYS hidden.
+**Column width strategy** (NOT column hiding):
+- Set `defaultColDef.minWidth: 120` so AG Grid auto-fits what it can
+- Columns 1-5 get explicit widths (name=200, price=180, rating=90, etc.)
+- Columns 6+ get `minWidth: 120` and rely on horizontal scroll
+- Long text columns (avg >50 chars): show in detail panel AND in table (with `cellRenderer` that truncates to 50 chars + "...")
+- NEVER use array slicing (`[:N]`) to limit visible columns — AG Grid handles overflow via scroll
 
 ## 10. Chart Fallback Rules
 
@@ -210,3 +213,43 @@ Long text columns (avg >50 chars): ALWAYS hidden.
 - Scatter with <30% fill rate → show warning "Shown N of M" + suggest alternative
 - Radar with <3 numeric columns → replace with horizontal bar
 - When falling back, choose the categorical column with highest fill rate
+
+---
+
+## 11. Mobile & Responsive Rules
+
+### HTML Dashboard
+**Already in base template** — do NOT re-implement:
+- `@media (max-width: 768px)`: sidebar collapse, KPI grid → 2-col, detail panel → full-width, touch targets 44px
+- `@media (max-width: 480px)`: KPI grid → 1-col, reduced padding, smaller title
+- `*:focus-visible` outline for keyboard navigation
+- `aria-label` on KPI grid, chart containers, data table, sidebar toggle
+
+**Designer responsibility** (not in base template):
+- Charts: set `min-height: 300px` in ECharts option, not CSS
+- AG Grid: keep `domLayout: 'normal'` — horizontal scroll handles overflow natively
+
+### Streamlit Dashboard
+- Streamlit handles basic responsiveness natively
+- BUT: custom CSS injections may break on narrow screens
+- Test all `st.columns()` layouts — if >3 columns, use `st.tabs()` on narrow screens
+- KPI row: max 4 metrics in `st.columns(4)` — auto-wraps on mobile
+
+### Both
+- Touch targets: minimum 44x44px for all interactive elements
+- Font size: minimum 14px body text, 12px table cells
+- No horizontal scroll on body — only within table container
+
+---
+
+## 12. Accessibility (a11y) Rules
+
+- **Color contrast**: all text must have minimum 4.5:1 contrast ratio against background
+  - `#f1f5f9` on `#0f172a` = 15.3:1 ✅
+  - `#94a3b8` on `#0f172a` = 7.1:1 ✅ (secondary text)
+  - Badge text must be white `#ffffff` on colored backgrounds
+- **Charts**: never convey information by color alone — use patterns, labels, or shapes as secondary channel
+- **Screen reader**: add `aria-label` to KPI cards, `role="table"` to AG Grid container
+- **Keyboard navigation**: all interactive elements must be focusable (tabindex), Escape closes detail panel
+- **Semantic HTML**: use `<main>`, `<nav>`, `<section>`, `<h2>`/`<h3>` for structure — NOT just `<div>` everywhere
+- **Loading states**: use `aria-busy="true"` during chart rendering

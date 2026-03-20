@@ -23,12 +23,15 @@ Pass per_source limit to each scraper agent prompt. Prefer APIs over scraping wh
 
 ### 2. Dispatch Scraper Subagents
 
-Dispatch one **scraper** subagent per approved source (max 5 parallel). Each agent:
+Dispatch one **scraper** subagent per approved source. **MUST dispatch ALL scrapers in a SINGLE Agent tool call** to run them in parallel (max 5). Do NOT dispatch sequentially — parallel execution saves significant time.
+
+Each agent:
 - Works with ONE source only
 - Uses Firecrawl CLI (search, scrape, map, crawl, agent)
 - If a public API was found for this source, use it preferentially
 - Returns structured data matching the agreed column list
 - Saves output to `{output_dir}/.firecrawl/`
+- Gets source reliability rating from `_state/sources.json` — pass to agent for logging
 
 ### 3. Incremental Save (CRITICAL)
 
@@ -82,6 +85,10 @@ Use AskUserQuestion. Wait for user confirmation.
 
 Write to `_state/raw_data_{source_slug}.json`: raw records per source (saved incrementally above)
 Write to `_state/errors.json`: any collection errors (if applicable)
+Update `_state/pipeline_metrics.json`:
+- Increment `agent_dispatches` by number of scraper agents dispatched
+- Add `phase_timings.phase_3`: `{ "started": "{ISO}", "ended": "{ISO}", "duration_sec": N }`
+- Add `quality_gates.collection`: `{ "sources_attempted": M, "sources_succeeded": N, "total_records": R }`
 Update `.superscrape-session.json`: current_phase -> "phase-4"
 
 ## Next

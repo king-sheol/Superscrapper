@@ -60,6 +60,18 @@ pip install openpyxl
 
 Output directory creation is deferred to Phase 1 after the topic is known.
 
+### 5. Topic Complexity Pre-assessment (advisory)
+
+When the user states their topic, quickly assess scope complexity:
+
+| Signal | Complexity | Action |
+|--------|-----------|--------|
+| Specific niche (e.g., "VPS hosting in Russia under $50/mo") | Low | Proceed normally |
+| Broad category (e.g., "cloud hosting") | Medium | Suggest narrowing: geography, price range, or segment |
+| Very broad (e.g., "SaaS tools" or "all hosting providers") | High | Warn: "This topic is very broad. Recommend narrowing to a specific segment for better data quality." |
+
+This is advisory — the user can proceed with any scope. But narrow topics produce higher-quality, more actionable data.
+
 ## Save State
 
 Write to `_state/firecrawl_credits.json`: `{ "initial_credits": N, "timestamp": "ISO" }`

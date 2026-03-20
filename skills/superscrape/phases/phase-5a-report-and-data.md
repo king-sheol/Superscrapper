@@ -43,6 +43,9 @@ All three files must exist and be non-empty.
 ## Save State
 
 Write to `_state/phase5a_done.json`: `{ "report": true, "csv": true, "xlsx": true }`
+Update `_state/pipeline_metrics.json`:
+- Increment `agent_dispatches` by 2 (report-writer + dashboard-designer data-only)
+- Add `phase_timings.phase_5a`: `{ "started": "{ISO}", "ended": "{ISO}", "duration_sec": N }`
 Update `.superscrape-session.json`: current_phase -> "phase-5b"
 
 ## Next

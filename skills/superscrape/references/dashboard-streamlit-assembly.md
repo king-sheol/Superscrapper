@@ -17,6 +17,8 @@
    - `TITLE = "Dashboard"` -> `TITLE = "{actual topic}"`
    - `CSV_PATH = "data.csv"` -> `CSV_PATH = "data.csv"` (or adjust path)
    - `COLUMNS = {}` -> `COLUMNS = {actual column classification}`
+     - Use `"detail_only"` (NOT `"hidden"`) for columns that don't fit in the table grid — they will appear in the detail panel when a row is selected
+     - Do NOT suppress any collected data — all columns must be accessible to the user
 
 3. **Add chart functions:**
    Read `dashboard-streamlit-charts.md`. Copy the 2 needed chart functions into `dashboard.py` (above the render_ functions). Also copy the constants (`CHART_COLORS`, `TOOLTIP_STYLE`, `ANIMATION`) and the `import numpy as np` line.
@@ -63,3 +65,18 @@
 - Do NOT rewrite the base file. Only edit the 3 config lines and 2 render function bodies.
 - Do NOT modify CSS, imports, AG Grid config, filters, or detail panel.
 - ALL file operations with `encoding='utf-8'`.
+
+## FORBIDDEN Patterns (will cause auditor rejection)
+- Do NOT use `"hidden"` key in COLUMNS — use `"detail_only"` instead
+- Do NOT add `visible_cols[:N]` or any hardcoded column limit — AG Grid handles scroll
+- Do NOT use `cellRenderer` with HTML strings (raw `<span>` tags) — the base uses `cellStyle` instead
+- Do NOT hardcode dates in footer — base template uses `datetime.now()` automatically
+- Do NOT add custom filter logic that hides records by default — all filters must start in "show all" state
+- Do NOT add `!important` to any CSS you write — the base template CSS is already sufficient
+
+## Responsiveness & Accessibility (read design-rules.md §11-12)
+- Streamlit handles basic responsive layout natively
+- Verify `st.columns()` calls don't exceed 4 columns (wraps poorly)
+- All custom CSS must include mobile overrides if setting fixed widths/heights
+- Multiselect filters: default must include ALL options (not a filtered subset)
+- KPI metrics: use `st.metric()` with `delta_color="off"` for non-trend values

@@ -33,8 +33,12 @@ You will receive:
 ### 1. Completeness
 - Are all expected columns present?
 - What percentage of cells are filled (not N/A)?
-- Are there entire rows with mostly N/A? (flag for removal)
+  - **CRITICAL threshold**: Overall fill rate < 75% → REJECT. Dataset is too sparse for meaningful analysis.
+  - **WARNING threshold**: Overall fill rate 75-85% → APPROVE with warning.
+  - **Per-column rule**: If any agreed column has < 30% fill rate, flag as CRITICAL — either find better source or remove column.
+- Are there entire rows with mostly N/A (>60% empty)? → flag for removal
 - Is the dataset large enough for meaningful analysis? (minimum 5 records)
+- Do ALL records have a value in the primary identifier column (e.g., provider name)? If not → CRITICAL.
 
 ### 2. Consistency
 - Are units consistent within each column? (e.g., all prices in same currency)
@@ -57,6 +61,12 @@ You will receive:
 - How many records came from each source?
 - Is the dataset dominated by a single source? (flag if >80% from one)
 - Are there sources that contributed 0 useful records?
+
+### 6. Source Reliability
+- Are any sources user-generated content (forums, social media, comment sections)?
+  - If yes → flag as WARNING: data is subjective and unverifiable
+  - Recommend confirming key claims against official/professional sources
+- Do source URLs actually lead to structured data (not blog posts or opinion pieces)?
 
 ## Output Format
 

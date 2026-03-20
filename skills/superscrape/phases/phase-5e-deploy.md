@@ -41,6 +41,47 @@ ssh {vps_user}@{vps_host} "cd /opt/streamlit-app && source venv/bin/activate && 
 ```
 Verify: `ssh {vps_user}@{vps_host} "systemctl is-active streamlit"` → should return "active"
 
+**Step 2b: Security check & nginx setup**
+
+Check if nginx reverse proxy is configured:
+```bash
+ssh {vps_user}@{vps_host} "test -f /etc/nginx/sites-enabled/streamlit && echo 'NGINX OK' || echo 'NGINX MISSING'"
+```
+
+If NGINX MISSING → generate and deploy nginx config:
+```bash
+ssh {vps_user}@{vps_host} "cat > /etc/nginx/sites-available/streamlit << 'NGINX_EOF'
+server {
+    listen 80;
+    server_name _;
+
+    location / {
+        proxy_pass http://127.0.0.1:8501;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection \"upgrade\";
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_read_timeout 86400;
+    }
+}
+NGINX_EOF
+ln -sf /etc/nginx/sites-available/streamlit /etc/nginx/sites-enabled/streamlit
+rm -f /etc/nginx/sites-enabled/default
+nginx -t && systemctl reload nginx"
+```
+
+**Security WARNING** — always show to user:
+```
+⚠️ SECURITY NOTE:
+Your Streamlit dashboard is publicly accessible at http://{vps_host}
+Consider:
+1. Add basic auth: htpasswd + nginx auth_basic
+2. Add HTTPS: certbot --nginx -d your-domain.com
+3. Restrict IP: allow YOUR_IP; deny all; in nginx config
+4. Bind Streamlit to localhost only: --server.address 127.0.0.1
+```
+
 **Step 3: If NOT configured → onboard**
 a. AskUserQuestion: "VPS IP и SSH user? (например root@1.2.3.4)"
 b. Check SSH key: `ls ~/.ssh/id_ed25519.pub 2>/dev/null`
@@ -88,6 +129,9 @@ Deploy both sequentially: VPS first, then GitHub Pages.
 ## Save State
 
 Write to `_state/phase5e_done.json`: `{ "deployed": true, "deploy_urls": [...] }` (or `{ "deployed": false, "reason": "user declined" }`)
+Update `_state/pipeline_metrics.json`:
+- Add `phase_timings.phase_5e`: `{ "started": "{ISO}", "ended": "{ISO}", "duration_sec": N }`
+- Add `deployment`: `{ "vps": true|false, "github_pages": true|false, "nginx_configured": true|false, "security_warning_shown": true|false }`
 Update `.superscrape-session.json`: current_phase -> "phase-6"
 
 ## Next

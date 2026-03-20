@@ -61,6 +61,20 @@ If a request fails:
 
 Always report what happened and why in your output.
 
+## Encoding Handling (CRITICAL for Cyrillic/CJK sites)
+
+Firecrawl may return `U+FFFD` (�) replacement characters instead of Cyrillic/CJK text. Detect and handle:
+
+1. **After each scrape**, check the output for `\ufffd` or `�`:
+   ```bash
+   grep -c '�' .firecrawl/page.md 2>/dev/null
+   ```
+2. **If found (count > 5)** — encoding is broken. Try these fallbacks in order:
+   a. Re-scrape with explicit format: `firecrawl scrape URL -f markdown -o .firecrawl/page-retry.md`
+   b. If still broken: use the Read tool on the .firecrawl output file (Read tool handles encoding correctly) and manually extract data from the readable portions
+   c. If all text is garbled: report PARTIAL status with `"issues": ["Encoding broken for this source — Cyrillic text replaced with U+FFFD"]`
+3. **Validation**: Before returning data, check that the `"Name"` field of each record contains readable text (not just `???` or `\ufffd`). If >50% of names are garbled → status = PARTIAL.
+
 ## Output
 
 Your response MUST end with a JSON code block containing the structured result:
