@@ -3,8 +3,17 @@
 ## Pre-check
 
 ```bash
-choice=$(python -c "import json; print(json.load(open('{output_dir}/_state/dashboard_choice.json'))['choice'])" 2>/dev/null)
-if [ "$choice" = "none" ] || [ -f {output_dir}/dashboard.py ] || [ -f {output_dir}/dashboard.html ]; then echo "GATE OK"; else echo "GATE FAIL"; fi
+python -c "
+import json, sys, os
+choice = json.load(open('{output_dir}/_state/dashboard_choice.json'))['choice']
+if choice == 'none':
+    print('GATE OK'); sys.exit(0)
+if choice in ('streamlit', 'both') and not os.path.exists('{output_dir}/dashboard.py'):
+    print('GATE FAIL: dashboard.py missing'); sys.exit(1)
+if choice in ('html', 'both') and not os.path.exists('{output_dir}/dashboard.html'):
+    print('GATE FAIL: dashboard.html missing'); sys.exit(1)
+print('GATE OK')
+"
 ```
 
 If GATE FAIL — return to previous phase.

@@ -23,7 +23,7 @@ Pass per_source limit to each scraper agent prompt. Prefer APIs over scraping wh
 
 ### 2. Dispatch Scraper Subagents
 
-Dispatch one **scraper** subagent per approved source. **MUST dispatch ALL scrapers in a SINGLE Agent tool call** to run them in parallel (max 5). Do NOT dispatch sequentially — parallel execution saves significant time.
+Dispatch one **scraper** subagent per approved source. **MUST dispatch ALL scrapers in a single message using multiple parallel Agent tool calls** (max 5). Each Agent call gets its own source — but all calls go in ONE message so they run concurrently. Do NOT dispatch sequentially one-by-one — parallel execution saves significant time.
 
 Each agent:
 - Works with ONE source only

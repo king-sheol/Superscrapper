@@ -17,6 +17,18 @@ Identify from the user's message:
 - **Scope**: how many items, geography, time period
 - **Data type**: rating/comparison, price monitoring, market research, competitor analysis
 
+### 1b. Topic Complexity Pre-assessment (advisory)
+
+After parsing the topic, quickly assess scope:
+
+| Signal | Complexity | Action |
+|--------|-----------|--------|
+| Specific niche (e.g., "VPS hosting in Russia under $50/mo") | Low | Proceed normally |
+| Broad category (e.g., "cloud hosting") | Medium | Suggest narrowing: geography, price range, or segment |
+| Very broad (e.g., "SaaS tools" or "all hosting providers") | High | Warn: "This topic is very broad. Recommend narrowing to a specific segment for better data quality." |
+
+This is advisory — the user can proceed with any scope.
+
 ### 2. Propose Columns
 
 Three columns are always mandatory:

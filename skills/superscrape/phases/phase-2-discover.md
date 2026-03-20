@@ -25,6 +25,8 @@ Each agent returns a list of sources with: URL, type (aggregator/official/review
 Before mapping, verify top sources are actually reachable using curl (NOT firecrawl — saves credits):
 ```bash
 # HEAD request — costs 0 Firecrawl credits
+# First check curl is available (missing on some Windows setups)
+curl --version > /dev/null 2>&1 || { echo "curl not available — skipping accessibility check"; exit 0; }
 curl -sI -o /dev/null -w "%{http_code}" --max-time 10 URL
 ```
 

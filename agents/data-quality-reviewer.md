@@ -27,6 +27,7 @@ You will receive:
 - **Expected columns** list
 - **Topic** of the research
 - **Number of sources** used
+- **Sources metadata** (from `_state/sources.json`) — includes URL, type, reliability rating per source. Use this for the Source Reliability check (§6)
 
 ## Review Checklist
 

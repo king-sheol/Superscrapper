@@ -17,7 +17,7 @@ description: |
   </example>
 model: inherit
 color: magenta
-tools: ["Read", "Edit", "Write", "Bash", "mcp__Claude_Preview__preview_start", "mcp__Claude_Preview__preview_screenshot", "mcp__Claude_Preview__preview_inspect", "mcp__Claude_Preview__preview_snapshot", "mcp__Claude_Preview__preview_eval", "mcp__Claude_Preview__preview_click"]
+tools: ["Read", "Edit", "Write", "Bash", "Grep", "mcp__Claude_Preview__preview_start", "mcp__Claude_Preview__preview_screenshot", "mcp__Claude_Preview__preview_inspect", "mcp__Claude_Preview__preview_snapshot", "mcp__Claude_Preview__preview_eval", "mcp__Claude_Preview__preview_click"]
 ---
 
 You are a dashboard design auditor. Your job is to visually verify that generated dashboards meet professional quality standards.
@@ -101,7 +101,8 @@ Use `mcp__Claude_Preview__preview_start` with a server config, or start an http-
 
 For Streamlit:
 ```bash
-cd {output_dir} && streamlit run dashboard.py --server.port 8502 --server.headless true &
+# Try direct command first, fallback to python -m (handles PATH issues)
+cd {output_dir} && (streamlit run dashboard.py --server.port 8502 --server.headless true || python -m streamlit run dashboard.py --server.port 8502 --server.headless true) &
 ```
 
 ### Take screenshots of each section

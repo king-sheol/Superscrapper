@@ -18,8 +18,8 @@ Run these checks — ALL must pass:
 # Report exists and is non-empty
 test -s {output_dir}/report.md && echo "report.md OK"
 
-# CSV parses without errors
-python -c "import csv; r=csv.reader(open('{output_dir}/data.csv')); print(f'{sum(1 for _ in r)-1} rows')"
+# CSV parses without errors (explicit encoding for Windows compatibility)
+python -c "import csv; r=csv.reader(open('{output_dir}/data.csv', encoding='utf-8-sig')); print(f'{sum(1 for _ in r)-1} rows')"
 
 # XLSX is valid
 python -c "import openpyxl; wb=openpyxl.load_workbook('{output_dir}/data.xlsx'); print(f'{wb.sheetnames}')"
@@ -42,28 +42,24 @@ curl -s -o /dev/null -w "%{http_code}" {deploy_url}
 
 ### 1b. Visual Verification of ALL Deploy URLs (REQUIRED)
 
-For EACH URL in `phase5e_done.json` → `deploy_urls[]`:
+**The orchestrator does NOT have preview tools.** Dispatch `dashboard-auditor` agent for visual verification.
 
-1. **Open the URL** using preview tools (preview_start for localhost, or navigate to remote URL)
-2. **Take screenshot** of the rendered dashboard
-3. **Check for**:
-   - Page loads without errors (no blank page, no 404, no Python traceback)
-   - Data table is visible and populated (not empty)
-   - Charts render (not blank containers)
-   - No raw HTML tags visible in table cells (e.g., literal `<span>` text)
-   - Russian text displays correctly (not mojibake/replacement characters)
-   - All resources load (CSS, JS — no broken styles from wrong paths)
-4. **GitHub Pages specific**:
-   - Check that relative paths work (CSS/JS/fonts load correctly without server-side routing)
-   - Verify ECharts and AG Grid CDN scripts load (not blocked by CORS or mixed content)
-   - Check page doesn't show GitHub 404 template
-   - Verify data is embedded in HTML (not loaded from external file that won't exist on GH Pages)
-5. **Streamlit on VPS specific**: warn if no authentication is configured (open to public internet)
-6. **Both**: take at least ONE screenshot per deployed dashboard and describe what you see to the user
+Prompt for auditor:
+"Verify deployed dashboards visually. URLs: {deploy_urls from phase5e_done.json}.
+For each URL:
+1. Use preview_start (for localhost) or curl + code review (for remote URLs)
+2. Check: page loads, data table populated, charts render, no raw HTML tags in cells, Russian text OK, all resources load
+3. GitHub Pages: verify CDN scripts load (no CORS/mixed content), data embedded in HTML, no 404 template
+4. Streamlit on VPS: warn if no auth configured
+5. Take at least ONE screenshot per dashboard
+Return VERDICT: Approved or Issues Found with specifics."
 
-If ANY visual check fails → report as CRITICAL issue in final summary. Do NOT silently approve.
-
-If preview tools are unavailable, explicitly state: "Visual verification SKIPPED — preview tools unavailable. Manual check recommended at: {url}"
+If auditor returns Issues Found → report as CRITICAL in final summary.
+If auditor cannot reach remote URLs (no preview tools for remote) → use curl to check HTTP 200:
+```bash
+curl -s -o /dev/null -w "%{http_code}" {deploy_url}
+```
+And state: "Visual verification of remote URL done by HTTP check only. Manual visual check recommended at: {url}"
 
 ### 2. Phase 5 Completion Gate
 

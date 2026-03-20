@@ -82,7 +82,7 @@ Decide:
 - **KPI cards**: Which 3-5 metrics to show as headline numbers
 - **Primary chart**: What chart type best tells the main story (bar, radar, scatter, treemap)
 - **Secondary chart**: What supports or contrasts the primary view
-- **Table columns**: Which columns to show (max 8 visible), which to hide (available in detail panel)
+- **Table columns**: Prioritize columns 1-5 with explicit widths. All remaining columns stay accessible via AG Grid horizontal scroll — do NOT hide or slice columns
 - **Filters**: Which categorical columns make the best filter controls (prefer low-cardinality: 3-15 values)
 - **Sort default**: What the initial sort should be and why
 
@@ -114,8 +114,9 @@ Produce a structured markdown brief:
 - KPI cards: [metric1], [metric2], [metric3], [metric4]
 - Primary chart: [type] showing [what]
 - Secondary chart: [type] showing [what]
-- Table visible columns: [col1], [col2], ..., [col8]
-- Table hidden columns: [col9], [col10], ... (in detail panel)
+- Table priority columns (explicit widths): [col1]=200px, [col2]=180px, ..., [col5]=120px
+- Table remaining columns: accessible via horizontal scroll (no hiding)
+- Detail panel columns: long-text columns (avg >50 chars) shown here AND truncated in table
 
 ### Special Considerations
 - [Any data quirks, e.g., "30% of records lack pricing — show N/A badge"]
@@ -128,6 +129,6 @@ Produce a structured markdown brief:
 - Your brief is INPUT to dashboard-designer — you do NOT generate any code or files
 - Base decisions on data analysis, not assumptions
 - Prefer simplicity: if the data doesn't need complex treatment, say so
-- Maximum 8 visible table columns — hide the rest in detail panel
+- NEVER instruct designer to hide or slice columns — all columns must be accessible via AG Grid scroll. Only long-text columns (>50 chars avg) get truncation + detail panel display
 - Filters should have 3-15 unique values; skip columns with >50 unique values as filters
 - Always explain WHY for each decision (helps designer understand intent)

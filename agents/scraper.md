@@ -65,9 +65,9 @@ Always report what happened and why in your output.
 
 Firecrawl may return `U+FFFD` (�) replacement characters instead of Cyrillic/CJK text. Detect and handle:
 
-1. **After each scrape**, check the output for `\ufffd` or `�`:
+1. **After each scrape**, check the output file for `\ufffd` or `�` (use the actual output path, not a relative guess):
    ```bash
-   grep -c '�' .firecrawl/page.md 2>/dev/null
+   grep -c '�' {output_file_path} 2>/dev/null
    ```
 2. **If found (count > 5)** — encoding is broken. Try these fallbacks in order:
    a. Re-scrape with explicit format: `firecrawl scrape URL -f markdown -o .firecrawl/page-retry.md`
