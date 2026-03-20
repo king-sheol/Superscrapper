@@ -971,7 +971,7 @@
             }
             var displayValue = formatNumberText(kpi.value, kpi.type);
 
-            html += '<div class="glass-card">' +
+            html += '<div class="glass-card" role="listitem" aria-label="' + kpi.label + ': ' + displayValue + '">' +
                 '<div class="flex items-center gap-3 mb-3">' +
                     '<div style="width:36px;height:36px;border-radius:8px;background:rgba(96,165,250,0.1);display:flex;align-items:center;justify-content:center;">' +
                         '<i data-lucide="' + kpi.icon + '" style="width:18px;height:18px;color:#60a5fa;"></i>' +
@@ -1053,19 +1053,20 @@
         var numericCols = getNumericColumns();
         var categoryCols = getCategoryColumns();
 
-        // Determine visible columns: name + first 2 numeric + first 2 category + up to fill 8
-        var visibleCols = [nameCol];
+        // Determine priority columns (explicit widths) vs remaining (AG Grid scroll)
+        // ALL columns are visible — no hiding, no slicing
+        var priorityCols = [nameCol];
         numericCols.slice(0, 2).forEach(function(c) {
-            if (visibleCols.indexOf(c) === -1 && visibleCols.length < 8) visibleCols.push(c);
+            if (priorityCols.indexOf(c) === -1) priorityCols.push(c);
         });
         categoryCols.slice(0, 2).forEach(function(c) {
-            if (visibleCols.indexOf(c) === -1 && visibleCols.length < 8) visibleCols.push(c);
+            if (priorityCols.indexOf(c) === -1) priorityCols.push(c);
         });
-        keys.forEach(function(c) {
+
+        // Long text and URL columns go to detail panel only
+        var detailOnlyCols = keys.filter(function(c) {
             var ct = getColumnType(c);
-            if (ct !== 'longtext' && ct !== 'url' && visibleCols.indexOf(c) === -1 && visibleCols.length < 8) {
-                visibleCols.push(c);
-            }
+            return ct === 'longtext' || ct === 'url';
         });
 
         var columnDefs = keys.map(function(key) {
@@ -1076,7 +1077,7 @@
                 sortable: true,
                 filter: true,
                 resizable: true,
-                hide: visibleCols.indexOf(key) === -1
+                hide: detailOnlyCols.indexOf(key) > -1
             };
 
             // Pin name column left
@@ -1172,7 +1173,8 @@
             defaultColDef: {
                 sortable: true,
                 filter: true,
-                resizable: true
+                resizable: true,
+                minWidth: 120
             }
         };
 

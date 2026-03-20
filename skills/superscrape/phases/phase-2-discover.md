@@ -94,7 +94,3 @@ Write to `_state/sources.json`:
 }
 ```
 Update `.superscrape-session.json`: current_phase -> "phase-3"
-
-## Next
-
-Read `phases/phase-3-collect.md` and continue.

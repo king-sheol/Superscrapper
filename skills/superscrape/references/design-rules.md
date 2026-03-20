@@ -112,7 +112,8 @@ Read `column_types` object. Keys are column names, values are types.
 ### Cyrillic/Russian Text
 - Radar axis labels: max 10 chars, use abbreviations
 - Filter labels: max 15 chars
-- AG Grid headers: short names ("Аудитория" not "")
+- AG Grid column headers: short names, uppercase via CSS (11px, letter-spacing 0.05em — set in base template)
+- Section headers (h2/h3): font-weight 600, NOT uppercase (see Layout rules below)
 - Hide long-text columns in table, show in detail panel
 
 ### Charts
@@ -249,7 +250,7 @@ server {
   - `#94a3b8` on `#0f172a` = 7.1:1 ✅ (secondary text)
   - Badge text must be white `#ffffff` on colored backgrounds
 - **Charts**: never convey information by color alone — use patterns, labels, or shapes as secondary channel
-- **Screen reader**: add `aria-label` to KPI cards, `role="table"` to AG Grid container
+- **Screen reader**: KPI grid has `role="list"`, each card has `role="listitem"` + `aria-label`; AG Grid has `role="table"`
 - **Keyboard navigation**: all interactive elements must be focusable (tabindex), Escape closes detail panel
 - **Semantic HTML**: use `<main>`, `<nav>`, `<section>`, `<h2>`/`<h3>` for structure — NOT just `<div>` everywhere
 - **Loading states**: use `aria-busy="true"` during chart rendering

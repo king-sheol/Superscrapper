@@ -47,7 +47,3 @@ Update `_state/pipeline_metrics.json`:
 - Increment `agent_dispatches` by 2 (report-writer + dashboard-designer data-only)
 - Add `phase_timings.phase_5a`: `{ "started": "{ISO}", "ended": "{ISO}", "duration_sec": N }`
 Update `.superscrape-session.json`: current_phase -> "phase-5b"
-
-## Next
-
-Read `phases/phase-5b-dashboard-choice.md` and continue.

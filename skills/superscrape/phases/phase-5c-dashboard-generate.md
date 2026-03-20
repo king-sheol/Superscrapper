@@ -71,9 +71,17 @@ code = open('{output_dir}/dashboard.py', encoding='utf-8').read()
 if 'cellRenderer' in code and '<span' in code:
     print('FAIL: raw HTML in cellRenderer — use cellStyle instead')
     sys.exit(1)
-if 'hidden' in code and 'COLUMNS' in code and '\"hidden\"' in code:
-    print('FAIL: COLUMNS has hidden key — use detail_only')
-    sys.exit(1)
+# Check for hidden column patterns
+import re as _re
+hidden_patterns = [
+    (r'"hidden"\s*:\s*True', 'COLUMNS dict with hidden key'),
+    (r'\.hide\(\)', 'pandas hide() call'),
+    (r'drop\(.*columns', 'dropping columns from display'),
+]
+for pattern, desc in hidden_patterns:
+    if _re.search(pattern, code):
+        print(f'FAIL: column hiding detected ({desc}) — all columns must be accessible')
+        sys.exit(1)
 if re.search(r'visible_cols\[:\d+\]', code):
     print('FAIL: hardcoded column limit found')
     sys.exit(1)
@@ -100,7 +108,7 @@ checks = [
     ('</html>' in html, 'closing html tag'),
     ('echarts' in html.lower(), 'ECharts library'),
     ('ag-grid' in html.lower() or 'agGrid' in html, 'AG Grid library'),
-    ('allData' in html and '[]' not in html.split('allData')[1][:5], 'data injected'),
+    ('allData' in html and 'allData = []' not in html and 'allData=[]' not in html, 'data injected'),
 ]
 failed = [name for ok, name in checks if not ok]
 if failed:
@@ -108,6 +116,27 @@ if failed:
     exit(1)
 print('HTML STRUCTURE OK')
 "
+```
+
+**For Dockerfile (if generated):**
+```bash
+# Verify Dockerfile syntax and required directives
+if [ -f {output_dir}/Dockerfile ]; then
+    python -c "
+dockerfile = open('{output_dir}/Dockerfile', encoding='utf-8').read()
+checks = [
+    ('FROM' in dockerfile, 'FROM directive'),
+    ('EXPOSE' in dockerfile, 'EXPOSE directive'),
+    ('HEALTHCHECK' in dockerfile, 'HEALTHCHECK directive'),
+    ('ENTRYPOINT' in dockerfile or 'CMD' in dockerfile, 'ENTRYPOINT or CMD'),
+]
+failed = [name for ok, name in checks if not ok]
+if failed:
+    print(f'FAIL: Dockerfile missing {failed}')
+    exit(1)
+print('DOCKERFILE OK')
+"
+fi
 ```
 
 If ANY smoke test fails → fix the issue BEFORE dispatching auditor. Do not waste auditor iterations on code that doesn't even parse.
@@ -125,7 +154,3 @@ Update `_state/pipeline_metrics.json`:
 - Add `quality_gates.dashboard`: `{ "smoke_tests_passed": N, "smoke_tests_total": M, "auditor_verdict": "Approved", "auditor_iterations": K }`
 - Add `smoke_tests`: `{ "syntax": "OK|FAIL", "pattern_check": "OK|FAIL", "data_load": "OK|FAIL", "html_structure": "OK|FAIL" }`
 Update `.superscrape-session.json`: current_phase -> "phase-5d"
-
-## Next
-
-Read `phases/phase-5d-review.md` and continue.

@@ -101,7 +101,3 @@ Write to `_state/pipeline_metrics.json`:
 }
 ```
 Update `.superscrape-session.json`: current_phase -> "phase-2"
-
-## Next
-
-Read `phases/phase-2-discover.md` and continue.

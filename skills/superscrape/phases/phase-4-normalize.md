@@ -22,8 +22,8 @@ Apply validation layers sequentially:
 
 **Layer 2 — Duplicates**: Deduplicate by key fields (name + source). When duplicates exist across sources:
 - Keep the record from the **highest reliability source** (read `_state/sources.json` for reliability ratings)
-- If same reliability: keep the **most complete record** (fewest N/A values)
-- If tied: keep record from source with most total records (higher sample = more trustworthy)
+- If same reliability: keep the **most complete record** (count non-N/A fields — highest count wins)
+- If still tied (same fill count): keep record from source with most total records (larger sample = more trustworthy)
 
 **Layer 3 — Ranges**: Check that numbers fall within reasonable bounds. Flag dates outside expected range. Mark out-of-range values for review.
 
@@ -124,7 +124,3 @@ Update `_state/pipeline_metrics.json`:
 - Add `phase_timings.phase_4`: `{ "started": "{ISO}", "ended": "{ISO}", "duration_sec": N }`
 - Add `quality_gates.normalization`: `{ "fill_rate": X, "reviewer_verdict": "Approved|Issues Found", "reviewer_iterations": N, "conflicts_found": N, "conflicts_resolved": N }`
 Update `.superscrape-session.json`: current_phase -> "phase-5a"
-
-## Next
-
-Read `phases/phase-5a-report-and-data.md` and continue.

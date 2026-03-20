@@ -116,7 +116,3 @@ Present the completion summary with: topic, total records, number of sources, fi
 ```bash
 rm {output_dir}/.superscrape-session.json
 ```
-
-## Next
-
-Pipeline complete. No next phase.

@@ -90,7 +90,3 @@ Update `_state/pipeline_metrics.json`:
 - Add `phase_timings.phase_3`: `{ "started": "{ISO}", "ended": "{ISO}", "duration_sec": N }`
 - Add `quality_gates.collection`: `{ "sources_attempted": M, "sources_succeeded": N, "total_records": R }`
 Update `.superscrape-session.json`: current_phase -> "phase-4"
-
-## Next
-
-Read `phases/phase-4-normalize.md` and continue.

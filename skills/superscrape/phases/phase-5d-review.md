@@ -42,7 +42,3 @@ Phase 5d is NOT complete until report-reviewer returns **VERDICT: Approved**.
 
 Write to `_state/phase5d_done.json`: `{ "reviewer_verdict": "Approved", "iterations": N }`
 Update `.superscrape-session.json`: current_phase -> "phase-5e"
-
-## Next
-
-Read `phases/phase-5e-deploy.md` and continue.

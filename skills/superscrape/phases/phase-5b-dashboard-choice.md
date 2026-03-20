@@ -49,8 +49,6 @@ Save `{output_dir}/_state/dashboard_choice.json`:
 ## Save State
 
 Write to `_state/dashboard_choice.json`: choice + complexity
+Update `_state/pipeline_metrics.json`:
+- Add `phase_timings.phase_5b`: `{ "started": "{ISO}", "ended": "{ISO}", "duration_sec": N }`
 Update `.superscrape-session.json`: current_phase -> "phase-5c", complexity -> computed value
-
-## Next
-
-Read `phases/phase-5c-dashboard-generate.md` and continue.

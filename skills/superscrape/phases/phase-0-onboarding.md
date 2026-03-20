@@ -64,7 +64,3 @@ Output directory creation is deferred to Phase 1 after the topic is known.
 
 Write to `_state/firecrawl_credits.json`: `{ "initial_credits": N, "timestamp": "ISO" }`
 Update `.superscrape-session.json`: current_phase -> "phase-1"
-
-## Next
-
-Read `phases/phase-1-clarify.md` and continue.

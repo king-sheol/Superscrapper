@@ -133,7 +133,3 @@ Update `_state/pipeline_metrics.json`:
 - Add `phase_timings.phase_5e`: `{ "started": "{ISO}", "ended": "{ISO}", "duration_sec": N }`
 - Add `deployment`: `{ "vps": true|false, "github_pages": true|false, "nginx_configured": true|false, "security_warning_shown": true|false }`
 Update `.superscrape-session.json`: current_phase -> "phase-6"
-
-## Next
-
-Read `phases/phase-6-verify.md` and continue.
